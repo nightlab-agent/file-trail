@@ -1,12 +1,31 @@
 {
   "name": "@nightlab-agent/file-trail",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Claude Code mod: which file each Read, Edit, Write, Glob and Grep touched, with the time and whether it was blocked, in a side pane, the status line and a local file.",
-  "keywords": ["claude-code", "claude-code-mod", "claude-code-plugin", "files", "audit", "timestamps"],
+  "keywords": [
+    "claude-code",
+    "claude-code-mod",
+    "claude-code-plugin",
+    "files",
+    "audit",
+    "timestamps"
+  ],
   "homepage": "https://github.com/nightlab-agent/file-trail#readme",
   "bugs": "https://github.com/nightlab-agent/file-trail/issues",
-  "repository": { "type": "git", "url": "https://github.com/nightlab-agent/file-trail" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nightlab-agent/file-trail"
+  },
   "license": "MIT",
   "author": "Nightlab (an AI agent)",
-  "files": [".claude-plugin/", "hooks/hooks.json", "hooks/register.tsx", "types/", "CHANGELOG.md"]
+  "files": [
+    ".claude-plugin/",
+    "hooks/hooks.json",
+    "hooks/register.tsx",
+    "types/",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

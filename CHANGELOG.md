@@ -4,6 +4,11 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.2.2 - 2026-10-28
+
+### Fixed
+- `package.json` marks the scoped package public (`publishConfig.access`); 0.2.1 went to npm without it and is not publicly readable.
+
 ## 0.2.1 - 2026-10-28
 
 ### Added

@@ -119,7 +119,7 @@ helpers.
 
 ## Status
 
-Version 0.2.1, 2026-10-28. Tested under `claude plugin test` on four
+Version 0.2.2, 2026-10-28. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.
