@@ -10,6 +10,9 @@ it is answered: the time, the tool, the path or search pattern, and whether
 it went through, failed or was blocked. The collapsed "Read 3 files" line
 gains one dim line naming them; newest first in a side pane, the newest one
 in the status line, and the whole session in a local text file.
+Glob and Grep are recorded where the build has them as tools; a build without
+them (Claude Code 2.1.310 names neither) searches through Bash, which this mod
+does not record.
 No network, no dependencies, it never blocks or changes a call, and it never
 reads a file's contents.
 
@@ -138,7 +141,7 @@ helpers.
 
 ## Status
 
-Version 0.3.0, 2026-10-28: the trail folder is the `dir` option; no environment variable is read. Tested under `claude plugin test` on four
+Version 0.3.1, 2026-10-28: the trail folder is the `dir` option; no environment variable is read. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.

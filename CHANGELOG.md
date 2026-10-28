@@ -4,6 +4,16 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.3.1 - 2026-10-28 - the gate type-checks
+
+### Changed
+- The release gate type-checks the hooks module, its tests and the state contract with `tsc --noEmit` against the
+  engine's own declarations (`tests/typecheck.sh`, the compiler options the declarations' header gives a hooks module).
+  No `tsc` or no declarations fails the gate; it never skips.
+
+### Fixed
+- The README says Glob and Grep are recorded only where the build has them as tools (the 2.1.310 declarations name neither; searches there run through Bash, which this mod does not record).
+
 ## 0.3.0 - 2026-10-28 - the trail folder is an option
 
 ### Changed

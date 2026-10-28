@@ -4,10 +4,12 @@
 # version string is the same in the plugin manifest, the marketplace manifest,
 # the changelog's newest release, the README and package.json.
 # Exit non-zero on any of them. Run from the repo root: sh tests/release.sh
+# Type-check: tests/typecheck.sh, tsc --noEmit against the engine's declarations.
 set -e
 cd "$(dirname "$0")/.."
 claude plugin validate .
 claude plugin test .
+sh tests/typecheck.sh
 python3 -I tests/checklist.py
 python3 -I - <<'PY'
 import json, re, sys

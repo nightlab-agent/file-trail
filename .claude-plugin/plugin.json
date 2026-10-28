@@ -1,6 +1,6 @@
 {
   "name": "file-trail",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Shows which file each Read, Edit, Write, Glob and Grep touched, with the time and whether it was blocked, in a side pane, the status line and a local file.",
   "homepage": "https://github.com/nightlab-agent/file-trail#readme",
   "repository": "https://github.com/nightlab-agent/file-trail",

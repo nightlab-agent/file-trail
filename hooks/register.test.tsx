@@ -1,4 +1,8 @@
 import { expect, mock, test } from 'claude-code/testing'
+import type { TestBody } from 'claude-code/testing'
+
+// What the engine stamps on a typed command: the person at the composer.
+const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 100 } } as const
 
 import { fileText, groupLine, groupNames, KEEP, shorten, SHOW, targetOf } from './register'
 
@@ -8,7 +12,7 @@ import { fileText, groupLine, groupNames, KEEP, shorten, SHOW, targetOf } from '
 // file system.
 
 type Written = { path: string; text: string }
-type On = Parameters<Parameters<typeof test>[1]>[1]
+type On = Parameters<TestBody>[1]
 
 const PANE = {
   plugin: 'file-trail',
@@ -75,8 +79,10 @@ test('searches show the pattern and folder; tools outside the list are not recor
   const { writes } = world(on, '')
   await $.tool.call({ tool: 'Bash', command: 'ls' })
   expect(writes.length).toBe(0)
-  await $.tool.call({ tool: 'Grep', pattern: 'TODO', path: 'src' })
-  await $.tool.call({ tool: 'Glob', pattern: '**/*.md' })
+  // Grep and Glob are built-in tools on some builds only (the 2.1.310 types name neither), so they do not name them.
+  type Call = Parameters<typeof $.tool.call>[0]
+  await $.tool.call({ tool: 'Grep', pattern: 'TODO', path: 'src' } as unknown as Call)
+  await $.tool.call({ tool: 'Glob', pattern: '**/*.md' } as unknown as Call)
   const text = writes.at(-1)!.text
   expect(text).toContain('Grep         TODO in src')
   expect(text).toContain('Glob         **/*.md')
@@ -118,7 +124,7 @@ test('the pane says so before any call, and the command opens it with the counts
   await ui.unmount()
   await $.tool.call({ tool: 'Read', file_path: '/a/secret' })
   await $.tool.call({ tool: 'Read', file_path: '/a/b' })
-  const r = await $.command.run({ command: 'file-trail', args: '' })
+  const r = await $.command.run({ command: 'file-trail', args: '', ...RUN })
   expect(r.text).toBe('File trail opened: 2 calls this session, 1 blocked.')
 })
 
