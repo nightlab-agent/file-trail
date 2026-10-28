@@ -1,7 +1,7 @@
 # file-trail
 
 **For anyone who has scrolled a Claude Code session and seen "Read 3 files"
-with no way to tell which three.** The collapsed transcript names a count,
+with no way to tell which three.** The collapsed conversation view names a count,
 not a path, so you expand every call to learn what the agent read, edited or
 searched, and a call a hook blocked looks like any other
 ([anthropics/claude-code#21151](https://github.com/anthropics/claude-code/issues/21151)).
@@ -75,8 +75,10 @@ For one run without installing, clone the repo and start the session with
 
 ## What it writes
 
-`$FILE_TRAIL_DIR/<session id>.txt`, or `$HOME/.file-trail/<session id>.txt`
-when `FILE_TRAIL_DIR` is unset; `session.txt` on a host with no session id.
+`<dir>/<session id>.txt`, where `dir` is the mod's one option (default
+`.file-trail`, under the project the session runs in; set it in `/config`, an
+absolute path keeps every project in one place); `session.txt` on a host
+with no session id.
 Rewritten whole after each recorded call, oldest first, the last 1000 calls:
 
 ```
@@ -101,8 +103,8 @@ nothing anywhere. It only reads the events Claude Code hands it.
 | `ui.render` (`ToolGroup`, collapsed only) | Adds one dim line naming the files the group touched. | The collapsed line gains that one line; the engine's own line and the expanded view are left as drawn. |
 | `tool.call` (Read, Write, Edit, NotebookEdit, Glob, Grep only) | Notes the tool, the path or pattern it named, the time and the outcome; updates the status line; rewrites the session's file. | Nothing: the call runs as asked and its result passes through. |
 
-It writes one file per session, `~/.file-trail/<session id>.txt` (or under
-`FILE_TRAIL_DIR`), holding only the tool name, the path or pattern, the
+It writes one file per session, `.file-trail/<session id>.txt` under the
+project (or under the `dir` option), holding only the tool name, the path or pattern, the
 outcome, a time and, for a subagent's call, the first 8 characters of its id.
 No file contents are stored.
 
@@ -111,10 +113,9 @@ No file contents are stored.
 It does not record Bash, web or MCP calls: only the six built-in file and
 search tools. It does not record what a call read or wrote, only what it
 named. It keeps no history across sessions beyond the files it leaves.
-It does not show why a call was blocked; the transcript still has the reason.
+It does not show why a call was blocked; the conversation still has the reason.
 
-The silent failure mode: if the folder cannot be written, or there is
-neither `FILE_TRAIL_DIR` nor `HOME`, the file is skipped and the session goes
+The silent failure mode: if the folder cannot be written, the file is skipped and the session goes
 on; the pane and status line still show the trail. A failure inside the mod
 never changes a tool's result.
 
@@ -137,7 +138,7 @@ helpers.
 
 ## Status
 
-Version 0.2.5, 2026-10-28: the credit line names X Infinite. Tested under `claude plugin test` on four
+Version 0.3.0, 2026-10-28: the trail folder is the `dir` option; no environment variable is read. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.

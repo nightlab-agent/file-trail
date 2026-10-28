@@ -4,7 +4,7 @@ import type { Register, ToolCallResult } from 'claude-code'
 import type { Entry } from '../types'
 
 // file-trail: which file each file tool touched, with the time and whether it
-// was blocked, in one place the collapsed transcript does not show
+// was blocked, in one place the collapsed conversation view does not show
 // (anthropics/claude-code#21151: "Read 3 files" names none of them).
 //
 // On every Read, Write, Edit, NotebookEdit, Glob and Grep call it waits for the
@@ -88,7 +88,7 @@ export const fileText = (all: Entry[], session: string) =>
   all.map(x => `${x.at} ${lineOf(x).slice(9)}`).join('\n') +
   '\n'
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'file-trail', description: 'Show which files and searches this session touched, newest first, in a pane' })
@@ -103,7 +103,7 @@ export const register: Register = on => {
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
     const own = await next(e)
     if (e.props.isExpanded) return own
-    const cwd = (await $.env.get('PWD')) || ''
+    const cwd = await $.session.cwd().catch(() => '')
     const names = groupNames(e.props.calls, cwd)
     if (names.length === 0) return own
     const { Box, Text } = $.ui.resolve(e)
@@ -147,7 +147,7 @@ export const register: Register = on => {
     const r = await next(e)
     if (!(TOOLS as readonly string[]).includes(e.tool)) return r
     try {
-      const cwd = (await $.env.get('PWD')) || ''
+      const cwd = await $.session.cwd().catch(() => '')
       const entry: Entry = {
         at: new Date().toISOString(),
         tool: e.tool,
@@ -161,9 +161,9 @@ export const register: Register = on => {
       } catch {
         // a surface with no status line
       }
-      const home = await $.env.get('HOME')
-      const dir = (await $.env.get('FILE_TRAIL_DIR')) || (home ? `${home}/.file-trail` : '')
-      if (dir) {
+      // The `dir` option; a relative folder is under the project the session runs in.
+      const dir = String(options.dir || '.file-trail')
+      {
         let session = ''
         try {
           session = await $.session.id()

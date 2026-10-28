@@ -3,8 +3,8 @@ import { expect, mock, test } from 'claude-code/testing'
 import { fileText, groupLine, groupNames, KEEP, shorten, SHOW, targetOf } from './register'
 
 // Each test stands for the engine beneath the plugin: it answers the tool
-// calls (or denies them), `$.fs.write`, `$.ui.status`, `$.env.get` and
-// `$.session.id`, and reads what the plugin wrote. Nothing touches the real
+// calls (or denies them), `$.fs.write`, `$.ui.status`, `$.session.cwd`
+// and `$.session.id`, and reads what the plugin wrote. Nothing touches the real
 // file system.
 
 type Written = { path: string; text: string }
@@ -24,10 +24,10 @@ const PANE = {
   },
 } as const
 
-const world = (on: On, env: Record<string, string>, opts: { writeFails?: boolean; deny?: RegExp; errorOn?: RegExp } = {}) => {
+const world = (on: On, cwd: string, opts: { writeFails?: boolean; deny?: RegExp; errorOn?: RegExp } = {}) => {
   const writes: Written[] = []
   const statuses: (string | undefined)[] = []
-  mock.env(on, env)
+  on('session.cwd', () => ({ value: cwd }))
   on('fs.write', (_, e) => {
     if (opts.writeFails) throw new Error('read-only file system')
     writes.push({ path: e.path, text: e.text })
@@ -50,17 +50,17 @@ const world = (on: On, env: Record<string, string>, opts: { writeFails?: boolean
 }
 
 test('a Read is recorded with its path, relative to the working folder, in the file and the status line', async ($, on) => {
-  const { writes, statuses } = world(on, { HOME: '/home/someone', PWD: '/work/app' })
+  const { writes, statuses } = world(on, '/work/app')
   await $.tool.call({ tool: 'Read', file_path: '/work/app/src/index.ts' })
   expect(writes.length).toBe(1)
-  expect(writes[0]!.path).toBe('/home/someone/.file-trail/sess-1.txt')
+  expect(writes[0]!.path.endsWith('/.file-trail/sess-1.txt')).toBe(true)
   expect(writes[0]!.text).toContain('Read         src/index.ts')
   expect(writes[0]!.text).toContain('1 calls')
   expect(statuses.at(-1)).toBe('Read src/index.ts')
 })
 
-test('a denied call is marked blocked and an error result is marked error', async ($, on) => {
-  const { writes, statuses } = world(on, { FILE_TRAIL_DIR: '/trail' }, { deny: /\.env/, errorOn: /missing/ })
+test('a denied call is marked blocked and an error result is marked error', { options: { dir: '/trail' } }, async ($, on) => {
+  const { writes, statuses } = world(on, '', { deny: /\.env/, errorOn: /missing/ })
   const denied = await $.tool.call({ tool: 'Read', file_path: '/work/.env' })
   expect(denied.deny).toBe('blocked by a rule')
   expect(statuses.at(-1)).toBe('Read /work/.env (blocked)')
@@ -71,8 +71,8 @@ test('a denied call is marked blocked and an error result is marked error', asyn
   expect(writes.at(-1)!.path).toBe('/trail/sess-1.txt')
 })
 
-test('searches show the pattern and folder; tools outside the list are not recorded', async ($, on) => {
-  const { writes } = world(on, { FILE_TRAIL_DIR: '/trail' })
+test('searches show the pattern and folder; tools outside the list are not recorded', { options: { dir: '/trail' } }, async ($, on) => {
+  const { writes } = world(on, '')
   await $.tool.call({ tool: 'Bash', command: 'ls' })
   expect(writes.length).toBe(0)
   await $.tool.call({ tool: 'Grep', pattern: 'TODO', path: 'src' })
@@ -83,23 +83,23 @@ test('searches show the pattern and folder; tools outside the list are not recor
   expect(text).not.toContain('Bash')
 })
 
-test('a failed write leaves the tool result untouched', async ($, on) => {
-  const { writes, statuses } = world(on, { FILE_TRAIL_DIR: '/nowhere' }, { writeFails: true })
+test('a failed write leaves the tool result untouched', { options: { dir: '/nowhere' } }, async ($, on) => {
+  const { writes, statuses } = world(on, '', { writeFails: true })
   const r = await $.tool.call({ tool: 'Write', file_path: '/x/y.txt', content: 'hi' })
   expect(r.deny).toBe(undefined)
   expect(writes.length).toBe(0)
   expect(statuses.at(-1)).toBe('Write /x/y.txt')
 })
 
-test('with no FILE_TRAIL_DIR and no HOME nothing is written', async ($, on) => {
-  const { writes, statuses } = world(on, {})
+test('the dir option names the folder; left unset it is .file-trail under the project', { options: { dir: '/var/trails' } }, async ($, on) => {
+  const { writes, statuses } = world(on, '')
   await $.tool.call({ tool: 'Read', file_path: '/a' })
-  expect(writes.length).toBe(0)
+  expect(writes.at(-1)!.path).toBe('/var/trails/sess-1.txt')
   expect(statuses.at(-1)).toBe('Read /a')
 })
 
 test('the pane lists the newest call first, blocked ones included, on every surface', async ($, on) => {
-  world(on, { FILE_TRAIL_DIR: '/trail' }, { deny: /secret/ })
+  world(on, '', { deny: /secret/ })
   await $.tool.call({ tool: 'Read', file_path: '/a/first.ts' })
   await $.tool.call({ tool: 'Read', file_path: '/a/secret.key' })
   for (const surface of ['terminal', 'desktop', 'vscode', 'mobile'] as const) {
@@ -112,7 +112,7 @@ test('the pane lists the newest call first, blocked ones included, on every surf
 })
 
 test('the pane says so before any call, and the command opens it with the counts', async ($, on) => {
-  world(on, { FILE_TRAIL_DIR: '/trail' }, { deny: /secret/ })
+  world(on, '', { deny: /secret/ })
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect((await ui.find({ type: 'Text' }))?.text).toBe('No file or search calls yet in this session.')
   await ui.unmount()
@@ -133,7 +133,7 @@ const GROUP = { plugin: 'file-trail', component: 'ToolGroup', requestId: 'msg-1'
 const call = (tool: string, input: unknown, isErrored = false) => ({ tool, input, isErrored, isRunning: false, isInterrupted: false })
 
 test('a collapsed group keeps the engine line and names its files, relative, on every surface', async ($, on) => {
-  mock.env(on, { PWD: '/work/app' })
+  on('session.cwd', () => ({ value: '/work/app' }))
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
     return <Text>Read 3 files</Text>
@@ -154,7 +154,7 @@ test('a collapsed group keeps the engine line and names its files, relative, on 
 })
 
 test('an expanded group, or one with no file calls, is drawn as the engine drew it', async ($, on) => {
-  mock.env(on, { PWD: '/w' })
+  on('session.cwd', () => ({ value: '/w' }))
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
     return <Text>engine</Text>

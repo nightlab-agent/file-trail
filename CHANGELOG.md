@@ -4,6 +4,14 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.3.0 - 2026-10-28 - the trail folder is an option
+
+### Changed
+- The trail file goes to the `dir` option (default `.file-trail`, under the project; set it in `/config`).
+  It was `$FILE_TRAIL_DIR`, else `~/.file-trail`: set `dir` to the absolute path of your old `.file-trail` folder to keep it.
+- The module reads no environment variable: paths are shortened against `$.session.cwd()`, not `PWD`.
+  An environment read and a write path built from it are what held another mod in the plugin directory's review.
+
 ## 0.2.5 - 2026-10-28 - plugin.json links the repo
 
 ### Changed
