@@ -4,8 +4,8 @@
 # header gives a hooks module). The declarations come from, in order:
 # CC_TYPES; the copy the engine lays beside a loaded mod
 # (.claude-plugin/types/claude-code/index.d.ts); /nightlab/tools/cc-types/current.
-# tsc comes from TSC (a TSC that is not executable FAILS), else /nightlab/tools, then PATH.
-# No hooks/*.ts(x) to check is a FAIL. Either one missing is a
+# tsc comes from TSC (a path or a command on PATH; anything else FAILS), else /nightlab/tools, then PATH.
+# No hooks module file (tests and .d.ts do not count) is a FAIL. Missing types or a missing tsc is a
 # FAIL, never a skip. Run from the repo root: sh tests/typecheck.sh
 set -e
 cd "$(dirname "$0")/.."
@@ -14,15 +14,15 @@ types="${CC_TYPES:-}"
 [ -n "$types" ] || types=/nightlab/tools/cc-types/current/claude-code.d.ts
 [ -f "$types" ] || { echo "typecheck: FAIL, no engine types at $types (set CC_TYPES)"; exit 1; }
 if [ -n "${TSC:-}" ]; then
-  [ -x "$TSC" ] || { echo "typecheck: FAIL, TSC=$TSC is not executable"; exit 1; }
-  tsc="$TSC"
+  tsc="$(command -v "$TSC" || true)"
+  [ -n "$tsc" ] && [ -x "$tsc" ] || { echo "typecheck: FAIL, TSC=$TSC is not an executable or a command on PATH"; exit 1; }
 else
   tsc=/nightlab/tools/node_modules/.bin/tsc
   [ -x "$tsc" ] || tsc="$(command -v tsc || true)"
 fi
 [ -n "$tsc" ] || { echo "typecheck: FAIL, no tsc (npm install typescript, or set TSC)"; exit 1; }
 files=$(ls hooks/*.ts hooks/*.tsx types/*.d.ts 2>/dev/null || true)
-echo "$files" | grep -q '^hooks/' || { echo "typecheck: FAIL, no hooks/*.ts or hooks/*.tsx to check"; exit 1; }
+echo "$files" | grep '^hooks/' | grep -v -E '\.test\.tsx?$|\.d\.ts$' | grep -q . || { echo "typecheck: FAIL, no hooks module (hooks/*.ts or *.tsx other than tests and .d.ts) to check"; exit 1; }
 "$tsc" --noEmit --target es2023 --lib es2023 --types "" --module esnext \
   --moduleResolution bundler --strict --noUncheckedIndexedAccess --skipLibCheck \
   --jsx react --jsxFactory h --jsxFragmentFactory Fragment "$types" $files

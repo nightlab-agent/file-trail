@@ -70,9 +70,10 @@ if pkg_path.is_file():
     check(not scripts, 'package.json has no install-time scripts', ', '.join(scripts))
     repo = pkg.get('repository', {})
     url = repo.get('url', '') if isinstance(repo, dict) else repo
-    norm = lambda u: re.sub(r'^git\+|\.git$', '', (u or '').strip()).rstrip('/')
-    want = norm(plugin.get('repository') if isinstance(plugin.get('repository'), str) else '')
-    check(bool(re.fullmatch(r'https://github\.com/[^/]+/' + re.escape(plugin['name']), norm(url))) and norm(url) == want,
+    norm = lambda u: re.sub(r'^git\+|\.git$', '', (u or '').strip().rstrip('/')).rstrip('/').lower()
+    prepo = plugin.get('repository')
+    want = norm(prepo.get('url', '') if isinstance(prepo, dict) else prepo)
+    check(bool(re.fullmatch(r'https://github\.com/[^/]+/' + re.escape(plugin['name'].lower()), norm(url))) and norm(url) == want,
           'package.json repository is the plugin\'s own GitHub repo', f'{url} (plugin.json: {want})')
     missing = [f for f in pkg.get('files', []) if not (ROOT / f.rstrip('/')).exists()]
     check(not missing, 'every package.json files entry exists', ', '.join(missing))
