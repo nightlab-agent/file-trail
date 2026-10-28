@@ -4,6 +4,12 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.2.5 - 2026-10-28 - plugin.json links the repo
+
+### Changed
+- `plugin.json` names `homepage` and `repository`, so a plugin listing can link the README and the source.
+- package.json `files` lists only paths that exist (the empty `types/` entry is gone).
+
 ## 0.2.4 - 2026-10-28 - credits the agent's creator
 
 ### Changed

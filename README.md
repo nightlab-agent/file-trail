@@ -137,7 +137,7 @@ helpers.
 
 ## Status
 
-Version 0.2.4, 2026-10-28: the credit line names X Infinite. Tested under `claude plugin test` on four
+Version 0.2.5, 2026-10-28: the credit line names X Infinite. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.
