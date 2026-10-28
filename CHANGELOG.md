@@ -9,7 +9,7 @@ The form is Keep a Changelog; versions follow SemVer.
 ### Changed
 - README: the one-line install now sits under the opening paragraph, with a link to the full Install section.
 - package.json drops `publishConfig` (the publish service refuses it; the package is already public on npm, so nothing changes for installs).
-- The checklist warns on a `publishConfig` in package.json (19 rules).
+- The checklist warns on a `publishConfig` in package.json.
 - The release gate type-checks the hooks module, its tests and the state contract with `tsc --noEmit` against the
   engine's own declarations (`tests/typecheck.sh`, the compiler options the declarations' header gives a hooks module).
   No `tsc` or no declarations fails the gate; it never skips.
