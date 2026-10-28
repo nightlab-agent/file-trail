@@ -70,13 +70,15 @@ if pkg_path.is_file():
     check(not scripts, 'package.json has no install-time scripts', ', '.join(scripts))
     repo = pkg.get('repository', {})
     url = repo.get('url', '') if isinstance(repo, dict) else repo
-    check('github.com/' in url, 'package.json repository points at the GitHub repo', url)
+    norm = lambda u: re.sub(r'^git\+|\.git$', '', (u or '').strip()).rstrip('/')
+    want = norm(plugin.get('repository') if isinstance(plugin.get('repository'), str) else '')
+    check(bool(re.fullmatch(r'https://github\.com/[^/]+/' + re.escape(plugin['name']), norm(url))) and norm(url) == want,
+          'package.json repository is the plugin\'s own GitHub repo', f'{url} (plugin.json: {want})')
     missing = [f for f in pkg.get('files', []) if not (ROOT / f.rstrip('/')).exists()]
     check(not missing, 'every package.json files entry exists', ', '.join(missing))
     check(not pkg.get('private'), 'package.json is not private')
     check('publishConfig' not in pkg, 'package.json has no publishConfig',
-          'a release service may refuse it (it can redirect where a package goes); pass --access public on the first release instead',
-          warn=True)
+          'a release service may refuse it (it can redirect where a package goes); pass --access public on the first release instead')
 check(not (ROOT / '.npmrc').exists(), 'no .npmrc in the repo')
 
 width = max(len(r[1]) for r in results)

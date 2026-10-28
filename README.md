@@ -148,7 +148,7 @@ helpers.
 
 ## Status
 
-Version 0.3.1, 2026-10-28: the trail folder is the `dir` option; no environment variable is read. Tested under `claude plugin test` on four
+Version 0.3.1, 2026-10-28: the install line sits at the top and the release gate type-checks and runs the directory checklist; since 0.3.0 the trail folder is the `dir` option and no environment variable is read. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.

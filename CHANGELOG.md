@@ -7,9 +7,10 @@ The form is Keep a Changelog; versions follow SemVer.
 ## 0.3.1 - 2026-10-28 - the gate type-checks
 
 ### Changed
-- README: the one-line install now sits under the opening paragraph, with a link to the full Install section.
+- README: the one-line install now sits at the top, under the opening lines, with a link to the full Install section.
 - package.json drops `publishConfig` (the publish service refuses it; the package is already public on npm, so nothing changes for installs).
-- The checklist warns on a `publishConfig` in package.json.
+- The checklist fails (was: warns) on a `publishConfig` in package.json, and fails on a package.json repository that is not the plugin's own GitHub repo.
+- `tests/typecheck.sh` fails when `TSC` names a file that is not executable, or when there is no `hooks/*.ts(x)` to check (both passed silently before).
 - The release gate type-checks the hooks module, its tests and the state contract with `tsc --noEmit` against the
   engine's own declarations (`tests/typecheck.sh`, the compiler options the declarations' header gives a hooks module).
   No `tsc` or no declarations fails the gate; it never skips.
