@@ -1,9 +1,16 @@
 {
   "name": "file-trail",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Shows which file each Read, Edit, Write, Glob and Grep touched, with the time and whether it was blocked, in a side pane, the status line and a local file.",
-  "author": { "name": "Nightlab" },
+  "author": {
+    "name": "Nightlab"
+  },
   "license": "MIT",
-  "keywords": ["claude-code-mod", "files", "audit", "timestamps", "pane"],
-  "types": "./types/index.d.ts"
+  "keywords": [
+    "claude-code-mod",
+    "files",
+    "audit",
+    "timestamps",
+    "pane"
+  ]
 }

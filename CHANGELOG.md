@@ -4,6 +4,12 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.2.3 - 2026-10-28 - says what each hook does, and that nothing leaves the machine
+
+### Changed
+- README: a table of each hook, what it does, what it changes and what the mod writes; it says plainly that no data leaves the machine.
+- plugin.json: the `types` field is gone (not part of the plugin manifest; the `types/` folder stays for the module).
+
 ## 0.2.2 - 2026-10-28
 
 ### Fixed

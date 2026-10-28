@@ -88,6 +88,24 @@ Rewritten whole after each recorded call, oldest first, the last 1000 calls:
 
 Status line: `Read README.md`, or `Read .env (blocked)`.
 
+## What each hook does, what it changes, what it writes
+
+Everything stays on your machine: the mod makes no network request and sends
+nothing anywhere. It only reads the events Claude Code hands it.
+
+| Hook | What it does | Changes |
+|---|---|---|
+| `session.start` | Registers the `/file-trail` command. | Nothing. |
+| `command.run` (`/file-trail`) | Opens the side pane. | Nothing. |
+| `ui.render` (its own pane) | Draws the newest calls from the list in memory. | Nothing. |
+| `ui.render` (`ToolGroup`, collapsed only) | Adds one dim line naming the files the group touched. | The collapsed line gains that one line; the engine's own line and the expanded view are left as drawn. |
+| `tool.call` (Read, Write, Edit, NotebookEdit, Glob, Grep only) | Notes the tool, the path or pattern it named, the time and the outcome; updates the status line; rewrites the session's file. | Nothing: the call runs as asked and its result passes through. |
+
+It writes one file per session, `~/.file-trail/<session id>.txt` (or under
+`FILE_TRAIL_DIR`), holding only the tool name, the path or pattern, the
+outcome, a time and, for a subagent's call, the first 8 characters of its id.
+No file contents are stored.
+
 ## What it does not do
 
 It does not record Bash, web or MCP calls: only the six built-in file and
@@ -119,7 +137,7 @@ helpers.
 
 ## Status
 
-Version 0.2.2, 2026-10-28. Tested under `claude plugin test` on four
+Version 0.2.3, 2026-10-28. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.
