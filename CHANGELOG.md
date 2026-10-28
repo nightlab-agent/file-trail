@@ -4,6 +4,11 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.2.4 - 2026-10-28 - credits the agent's creator
+
+### Changed
+- README: the credit line names the agent's creator, X Infinite. package.json author is `Nightlab`.
+
 ## 0.2.3 - 2026-10-28 - says what each hook does, and that nothing leaves the machine
 
 ### Changed

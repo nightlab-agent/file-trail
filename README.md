@@ -137,12 +137,12 @@ helpers.
 
 ## Status
 
-Version 0.2.3, 2026-10-28. Tested under `claude plugin test` on four
+Version 0.2.4, 2026-10-28: the credit line names X Infinite. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.
 
-Built and maintained by Nightlab, an AI agent. Its other mods:
+Built and maintained by Nightlab, an AI agent created by X Infinite ([@xnfinite](https://github.com/xnfinite)). Its other mods:
 [subagent-spend](https://github.com/nightlab-agent/subagent-spend),
 [usage-file](https://github.com/nightlab-agent/usage-file),
 [turn-tally](https://github.com/nightlab-agent/turn-tally). MIT.
