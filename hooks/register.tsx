@@ -60,6 +60,28 @@ export const lineOf = (x: Entry) => {
   return `${hms} ${MARK[x.outcome]} ${x.tool.padEnd(12)} ${x.target}${tail}${who}`
 }
 
+/** What each file call in a group named, in order; an errored one carries `!`. */
+export const groupNames = (calls: ReadonlyArray<{ tool: string; input: unknown; isErrored: boolean }>, cwd: string) =>
+  calls
+    .filter(c => (TOOLS as readonly string[]).includes(c.tool) && c.input !== null && typeof c.input === 'object')
+    .map(c => ({ name: shorten(targetOf(c.input as Record<string, unknown>), cwd), isErrored: c.isErrored }))
+    .filter(x => x.name !== '')
+    .map(x => (x.isErrored ? `${x.name} !` : x.name))
+
+/** One line under the group: the names, comma separated, cut to the width with how many are left. */
+export const groupLine = (names: string[], columns: number) => {
+  const room = Math.max(20, columns - 4)
+  let line = '  ⎿ '
+  for (let i = 0; i < names.length; i++) {
+    const sep = i === 0 ? '' : ', '
+    const rest = names.length - i - 1
+    const more = rest > 0 ? `, +${rest} more` : ''
+    if (i > 0 && (line + sep + names[i] + more).length > room) return `${line}, +${names.length - i} more`
+    line += sep + names[i]
+  }
+  return line
+}
+
 /** The file's whole text, oldest first, one line per entry. */
 export const fileText = (all: Entry[], session: string) =>
   `# file-trail${session ? ` ${session}` : ''}: ${all.length} calls (x blocked, ! error)\n` +
@@ -74,6 +96,23 @@ export const register: Register = on => {
       // a surface with no commands; the status line and file go on
     }
     return next(e)
+  })
+
+  // The collapsed group ("Read 3 files") keeps the engine's own line and gains
+  // one dim line naming what the file calls touched; expanded (ctrl+o) it is left alone.
+  on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
+    const own = await next(e)
+    if (e.props.isExpanded) return own
+    const cwd = (await $.env.get('PWD')) || ''
+    const names = groupNames(e.props.calls, cwd)
+    if (names.length === 0) return own
+    const { Box, Text } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="column">
+        {own}
+        <Text dimColor>{groupLine(names, e.viewport?.columns ?? 80)}</Text>
+      </Box>
+    )
   })
 
   on('command.run', { command: 'file-trail' }, async $ => {

@@ -7,10 +7,25 @@ searched, and a call a hook blocked looks like any other
 ([anthropics/claude-code#21151](https://github.com/anthropics/claude-code/issues/21151)).
 This mod records every Read, Write, Edit, NotebookEdit, Glob and Grep call as
 it is answered: the time, the tool, the path or search pattern, and whether
-it went through, failed or was blocked. Newest first in a side pane, the
-newest one in the status line, and the whole session in a local text file.
+it went through, failed or was blocked. The collapsed "Read 3 files" line
+gains one dim line naming them; newest first in a side pane, the newest one
+in the status line, and the whole session in a local text file.
 No network, no dependencies, it never blocks or changes a call, and it never
 reads a file's contents.
+
+## Under the collapsed line
+
+Each collapsed tool group keeps its own line and gains one dim line naming the
+files and searches in it, in order, paths under the working folder relative to
+it, an errored call marked `!`, cut to the width with a count of the rest:
+
+```
+Read 3 files
+  ⎿ src/index.ts, README.md, docs/missing.md !
+```
+
+Expanded (ctrl+o, `--verbose`) the group is left as the engine draws it, since
+every call already shows its path there. Groups with no file call are untouched.
 
 ## The pane
 
@@ -97,7 +112,7 @@ helpers.
 
 ## Status
 
-Version 0.1.0, 2026-10-28. Tested under `claude plugin test` on four
+Version 0.2.0, 2026-10-28. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.

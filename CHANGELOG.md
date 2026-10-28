@@ -4,6 +4,12 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.2.0 - 2026-10-28
+
+### Added
+- A `ui.render` hook on the collapsed `ToolGroup`: the engine's own line stays, and one dim line under it names each file call's path or pattern, relative to the working folder, `!` on an errored one, cut to the width with `+n more`. Expanded groups and groups with no file call are drawn as the engine drew them.
+- 3 tests (12 in all); a mutation dropping the expanded check fails 1, one dropping the `!` fails 1.
+
 ## 0.1.0 - 2026-10-28
 
 ### Added

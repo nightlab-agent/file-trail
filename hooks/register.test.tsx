@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'claude-code/testing'
 
-import { fileText, KEEP, shorten, SHOW, targetOf } from './register'
+import { fileText, groupLine, groupNames, KEEP, shorten, SHOW, targetOf } from './register'
 
 // Each test stands for the engine beneath the plugin: it answers the tool
 // calls (or denies them), `$.fs.write`, `$.ui.status`, `$.env.get` and
@@ -127,6 +127,56 @@ test('a value an earlier version stored is declined', async ($, on) => {
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect((await ui.find({ type: 'Text' }))?.text).toBe('No file or search calls yet in this session.')
   await ui.unmount()
+})
+
+const GROUP = { plugin: 'file-trail', component: 'ToolGroup', requestId: 'msg-1' } as const
+const call = (tool: string, input: unknown, isErrored = false) => ({ tool, input, isErrored, isRunning: false, isInterrupted: false })
+
+test('a collapsed group keeps the engine line and names its files, relative, on every surface', async ($, on) => {
+  mock.env(on, { PWD: '/work/app' })
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>Read 3 files</Text>
+  })
+  const calls = [
+    call('Read', { file_path: '/work/app/src/a.ts' }),
+    call('Bash', { command: 'ls' }),
+    call('Read', { file_path: '/elsewhere/b.md' }),
+    call('Grep', { pattern: 'TODO', path: 'src' }),
+    call('Read', { file_path: '/work/app/gone.ts' }, true),
+  ]
+  for (const surface of ['terminal', 'desktop', 'vscode', 'mobile'] as const) {
+    const ui = await $.ui.mount({ ...GROUP, surface, props: { calls, isActive: false, isExpanded: false } })
+    expect((await ui.find({ type: 'Text', text: /Read 3 files/ }))?.text).toBe('Read 3 files')
+    expect((await ui.find({ type: 'Text', text: /⎿/ }))?.text).toBe('  ⎿ src/a.ts, /elsewhere/b.md, TODO in src, gone.ts !')
+    await ui.unmount()
+  }
+})
+
+test('an expanded group, or one with no file calls, is drawn as the engine drew it', async ($, on) => {
+  mock.env(on, { PWD: '/w' })
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>engine</Text>
+  })
+  const expanded = await $.ui.mount({ ...GROUP, surface: 'terminal', props: { calls: [call('Read', { file_path: '/w/a' })], isActive: false, isExpanded: true } })
+  expect(await expanded.find({ type: 'Text', text: /⎿/ })).toBeUndefined()
+  await expanded.unmount()
+  const bash = await $.ui.mount({ ...GROUP, surface: 'terminal', props: { calls: [call('Bash', { command: 'ls' })], isActive: false, isExpanded: false } })
+  expect(await bash.find({ type: 'Text', text: /⎿/ })).toBeUndefined()
+  expect((await bash.find({ type: 'Text' }))?.text).toBe('engine')
+  await bash.unmount()
+})
+
+test('the group line is cut to the width with a count of the rest', () => {
+  const names = Array.from({ length: 30 }, (_, i) => `src/file-${i}.ts`)
+  const line = groupLine(names, 60)
+  expect(line.length).toBeLessThanOrEqual(60)
+  expect(line).toMatch(/^ {2}⎿ src\/file-0\.ts, .*, \+\d+ more$/)
+  const shown = line.split(', ').length - 1
+  expect(line.endsWith(`+${30 - shown} more`)).toBe(true)
+  expect(groupLine(['one.ts'], 80)).toBe('  ⎿ one.ts')
+  expect(groupNames([call('Read', null), call('Glob', { pattern: '' })], '')).toEqual([])
 })
 
 test('helpers: target, shorten, file text, limits', () => {
