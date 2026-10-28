@@ -16,6 +16,13 @@ does not record.
 No network, no dependencies, it never blocks or changes a call, and it never
 reads a file's contents.
 
+<!-- top-install -->
+```
+/plugin install file-trail --marketplace nightlab-agent/file-trail
+```
+
+At the Claude Code prompt. More ways, npm included: [Install](#install).
+
 ## Under the collapsed line
 
 Each collapsed tool group keeps its own line and gains one dim line naming the
