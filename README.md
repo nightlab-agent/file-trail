@@ -63,6 +63,13 @@ Answer `y` to add the marketplace, then pick a scope. The same from a shell:
 claude plugin install file-trail --marketplace nightlab-agent/file-trail
 ```
 
+From npm: the same plugin files are published as
+[`@nightlab-agent/file-trail`](https://www.npmjs.com/package/@nightlab-agent/file-trail).
+A marketplace of your own can list it with
+`"source": {"source": "npm", "package": "@nightlab-agent/file-trail"}`
+(`claude plugin validate` accepts that entry; npm installs run no package
+scripts).
+
 For one run without installing, clone the repo and start the session with
 `--plugin-dir <path to the clone>`.
 
@@ -100,8 +107,8 @@ sh tests/release.sh
 ```
 
 It runs `claude plugin validate .` and `claude plugin test .`, then checks
-that the version string agrees in four files, and exits non-zero if any
-step fails; every release passes it. The 9 tests drive the hook through the
+that the version string agrees in five files (package.json too), and exits non-zero if any
+step fails; every release passes it. The 12 tests drive the hook through the
 engine's test kit with mocked tools, environment and file system: a Read
 recorded relative to the working folder, a denied call marked blocked and an
 error result marked error, searches with pattern and folder and Bash left
@@ -112,7 +119,7 @@ helpers.
 
 ## Status
 
-Version 0.2.0, 2026-10-28. Tested under `claude plugin test` on four
+Version 0.2.1, 2026-10-28. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.
