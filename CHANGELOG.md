@@ -6,8 +6,8 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## 0.3.1 - 2026-10-28 - the gate type-checks
 
-- README: the one-line install now sits under the opening paragraph, with a link to the full Install section.
 ### Changed
+- README: the one-line install now sits under the opening paragraph, with a link to the full Install section.
 - The release gate type-checks the hooks module, its tests and the state contract with `tsc --noEmit` against the
   engine's own declarations (`tests/typecheck.sh`, the compiler options the declarations' header gives a hooks module).
   No `tsc` or no declarations fails the gate; it never skips.
