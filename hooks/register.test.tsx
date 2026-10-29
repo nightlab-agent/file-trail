@@ -56,10 +56,10 @@ const world = (on: On, cwd: string, opts: { writeFails?: boolean; deny?: RegExp;
 test('a Read is recorded with its path, relative to the working folder, in the file and the status line', async ($, on) => {
   const { writes, statuses } = world(on, '/work/app')
   await $.tool.call({ tool: 'Read', file_path: '/work/app/src/index.ts' })
-  expect(writes.length).toBe(1)
-  expect(writes[0]!.path.endsWith('/.file-trail/sess-1.txt')).toBe(true)
-  expect(writes[0]!.text).toContain('Read         src/index.ts')
-  expect(writes[0]!.text).toContain('1 calls')
+  expect(writes.length).toBe(2)
+  expect(writes[1]!.path.endsWith('/.file-trail/sess-1.txt')).toBe(true)
+  expect(writes[1]!.text).toContain('Read         src/index.ts')
+  expect(writes[1]!.text).toContain('1 calls')
   expect(statuses.at(-1)).toBe('Read src/index.ts')
 })
 
@@ -194,4 +194,14 @@ test('helpers: target, shorten, file text, limits', () => {
   expect(shorten('/w/a.ts', '')).toBe('/w/a.ts')
   expect(fileText([], '')).toBe('# file-trail: 0 calls (x blocked, ! error)\n\n')
   expect(SHOW).toBeLessThan(KEEP)
+})
+
+test('before its first write the mod writes <dir>/.gitignore holding one line, *, once, so git never sees the folder', async ($, on) => {
+  const { writes } = world(on, '/work/app')
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/src/index.ts' })
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/README.md' })
+  expect(writes[0]!.path.endsWith('/.file-trail/.gitignore')).toBe(true)
+  expect(writes[0]!.text).toBe('*\n')
+  expect(writes.filter(w => w.path.endsWith('/.gitignore')).length).toBe(1)
+  expect(writes.filter(w => w.path.endsWith('.txt')).length).toBe(2)
 })

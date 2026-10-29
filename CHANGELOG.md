@@ -4,6 +4,19 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.4.0 - 2026-10-29 - the trail folder is kept out of git
+
+### Added
+- Before its first write in a session the mod writes `<dir>/.gitignore` holding one line, `*`, so git ignores the trail
+  folder in every project with no step from you. The trail names every file and search the session touched, and until
+  now nothing kept a user from committing it with the project (found by an outside review, 2026-10-29).
+- A test for it, which failed before the change.
+
+### Changed
+- README rewritten in plain words: what it draws, how to install it, what it writes and how to delete it. It no longer
+  carries a version history (this file does), and no longer advertises other products.
+- `tests/release.sh` checks the version string in four files (the README no longer carries one).
+
 ## 0.3.2 - 2026-10-28 - the README names the kit
 
 ### Added

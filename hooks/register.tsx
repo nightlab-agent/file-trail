@@ -89,6 +89,8 @@ export const fileText = (all: Entry[], session: string) =>
   '\n'
 
 export const register: Register = (on, options) => {
+  // whether this session has written the trail folder's .gitignore yet
+  const done = { ignore: false }
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'file-trail', description: 'Show which files and searches this session touched, newest first, in a pane' })
@@ -169,6 +171,12 @@ export const register: Register = (on, options) => {
           session = await $.session.id()
         } catch {
           // no session id on this host: one file for all
+        }
+        // Before the first write of a session: `<dir>/.gitignore` holding `*`, so git ignores the folder in
+        // every project with no step from the user. The trail names every file the session touched.
+        if (!done.ignore) {
+          await $.fs.write(`${dir}/.gitignore`, '*\n')
+          done.ignore = true
         }
         await $.fs.write(`${dir}/${session || 'session'}.txt`, fileText(all, session))
       }
