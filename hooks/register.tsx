@@ -120,7 +120,10 @@ async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
 }
 
 export const register: Register = (on, options) => {
-  const file: TrailFile = { writing: false, owed: false, ignore: false, newest: null }
+  // Only a folder named .file-trail is the mod's own; any other may hold the user's files (even be the
+  // project itself, `.`), so no .gitignore is written there.
+  const own = String(options.dir || '.file-trail').replace(/\/+$/, '').split('/').at(-1) === '.file-trail'
+  const file: TrailFile = { writing: false, owed: false, ignore: !own, newest: null }
   // numbers the calls in the order their entries were kept, so the newest kept entries are the ones written
   let seq = 0
   on('session.start', async ($, e, next) => {
@@ -189,7 +192,8 @@ export const register: Register = (on, options) => {
 
   on('tool.call', async ($, e, next) => {
     const r = await next(e)
-    const blocked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id)
+    // a deny an outer hook overruled let the call run: only a call that came back refused is blocked
+    const blocked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id) && r.isError === true
     if (!(TOOLS as readonly string[]).includes(e.tool)) return r
     try {
       const cwd = await $.session.cwd().catch(() => '')

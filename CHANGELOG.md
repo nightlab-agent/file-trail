@@ -8,6 +8,10 @@ The form is Keep a Changelog; versions follow SemVer.
 - A call that a settings PreToolUse hook denies (the usual security hook) is marked blocked, not error.
   Such a deny reaches the mod's tool.call hook as an error result; the mod now also reads the PreToolUse
   event itself and matches the two by the call's id. A test shows it beside a plugin-level deny.
+- A call whose deny from beneath was overruled by a hook above (so it ran) is no longer marked blocked.
+- The mod writes its `.gitignore` only in a folder named `.file-trail`: with the `dir` option set to `.`,
+  it replaced the project's own `.gitignore` with `*`. The default folder still gets its `.gitignore`.
+- README: says that a deny from an administrator-managed hook is marked error (the mod cannot see it).
 - CHANGELOG: an older line named the creator in a form he does not use; it says xnfinite.
 
 ## 0.4.2 - 2026-10-29

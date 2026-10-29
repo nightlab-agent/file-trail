@@ -209,6 +209,13 @@ test('before its first write the mod writes <dir>/.gitignore holding one line, *
   expect(writes.filter(w => w.path.endsWith('.txt')).length).toBe(2)
 })
 
+test('with dir set to the project itself, the project\'s own .gitignore is left alone', { options: { dir: '.' } }, async ($, on) => {
+  const { writes } = world(on, '/work/app')
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/src/index.ts' })
+  expect(writes.filter(w => w.path.endsWith('.gitignore')).length).toBe(0)
+  expect(writes.filter(w => w.path.endsWith('.txt')).length).toBe(1)
+})
+
 test('two calls at once: the first call\'s session id comes back late, and the file still holds both entries', async ($, on) => {
   const writes: Written[] = []
   on('session.cwd', () => ({ value: '/w' }))

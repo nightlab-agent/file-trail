@@ -123,6 +123,10 @@ call. Nothing reads the files but you.
 The folder is the mod's one option, `dir` (set it in `/config`). A relative
 path is under the project; an absolute path keeps every project's trails in
 one place.
+The `.gitignore` is written only in a folder named `.file-trail` (the default,
+or an absolute path ending in it). A folder of another name may hold your own
+files (it could even be `.`), so file-trail leaves git alone there: if it is
+inside a project, add it to that project's `.gitignore`.
 
 ## What each hook does
 
@@ -137,6 +141,9 @@ the events Claude Code hands it. Everything stays on your machine.
 | `ui.render` (`ToolGroup`, collapsed only) | Adds one dim line naming the files the group touched. | The collapsed group gains that one line. Claude Code's own line and the expanded view are left as drawn. |
 | `tool.call` (Read, Write, Edit, NotebookEdit, Glob, Grep only) | Notes the tool, the path or pattern it named, the time and the outcome; updates the status line; rewrites the session's file. | Nothing: the call runs as asked and its result passes through. |
 | `classic.PreToolUse` | Notes whether a settings PreToolUse hook (such as a security hook) denied the call, so the trail marks it blocked rather than error. | Nothing: the decision of the hooks beneath passes through unchanged. |
+
+One limit: a deny from a hook your administrator manages (managed settings, or a mod in their tier) is made
+above every mod, so file-trail never sees it and marks the call `error`, with the reason the hook gave.
 
 ## What it does not do
 
