@@ -43,7 +43,7 @@ export const targetOf = (args: Record<string, unknown>) => {
 export const shorten = (target: string, cwd: string) => {
   if (!cwd) return target
   const base = cwd.endsWith('/') ? cwd : `${cwd}/`
-  return target.split(base).join('')
+  return target.startsWith(base) ? target.slice(base.length) : target
 }
 
 export const outcomeOf = (r: ToolCallResult): Entry['outcome'] =>

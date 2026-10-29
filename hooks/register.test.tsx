@@ -192,6 +192,9 @@ test('helpers: target, shorten, file text, limits', () => {
   expect(shorten('/w/a/b.ts', '/w')).toBe('a/b.ts')
   expect(shorten('/other/b.ts', '/w')).toBe('/other/b.ts')
   expect(shorten('/w/a.ts', '')).toBe('/w/a.ts')
+  // look-alikes: the working folder's name inside another path, or repeated, is not cut
+  expect(shorten('/mnt/w/a.ts', '/w')).toBe('/mnt/w/a.ts')
+  expect(shorten('/w/x/w/y.ts', '/w')).toBe('x/w/y.ts')
   expect(fileText([], '')).toBe('# file-trail: 0 calls (x blocked, ! error)\n\n')
   expect(SHOW).toBeLessThan(KEEP)
 })
