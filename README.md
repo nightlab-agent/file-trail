@@ -136,6 +136,7 @@ the events Claude Code hands it. Everything stays on your machine.
 | `ui.render` (its own pane) | Draws the newest calls from the list in memory. | Nothing. |
 | `ui.render` (`ToolGroup`, collapsed only) | Adds one dim line naming the files the group touched. | The collapsed group gains that one line. Claude Code's own line and the expanded view are left as drawn. |
 | `tool.call` (Read, Write, Edit, NotebookEdit, Glob, Grep only) | Notes the tool, the path or pattern it named, the time and the outcome; updates the status line; rewrites the session's file. | Nothing: the call runs as asked and its result passes through. |
+| `classic.PreToolUse` | Notes whether a settings PreToolUse hook (such as a security hook) denied the call, so the trail marks it blocked rather than error. | Nothing: the decision of the hooks beneath passes through unchanged. |
 
 ## What it does not do
 

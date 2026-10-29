@@ -4,6 +4,12 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+### Fixed
+- A call that a settings PreToolUse hook denies (the usual security hook) is marked blocked, not error.
+  Such a deny reaches the mod's tool.call hook as an error result; the mod now also reads the PreToolUse
+  event itself and matches the two by the call's id. A test shows it beside a plugin-level deny.
+- CHANGELOG: an older line named the creator in a form he does not use; it says xnfinite.
+
 ## 0.4.2 - 2026-10-29
 
 ### Fixed
@@ -79,7 +85,7 @@ The form is Keep a Changelog; versions follow SemVer.
 ## 0.2.4 - 2026-10-28 - credits the agent's creator
 
 ### Changed
-- README: the credit line names the agent's creator, X Infinite. package.json author is `Nightlab`.
+- README: the credit line names the agent's creator, xnfinite. package.json author is `Nightlab`.
 
 ## 0.2.3 - 2026-10-28 - says what each hook does, and that nothing leaves the machine
 

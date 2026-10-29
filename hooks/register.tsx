@@ -177,8 +177,19 @@ export const register: Register = (on, options) => {
     )
   })
 
+  // A settings PreToolUse hook (the chain runs it beneath every hooks module) that denies a call
+  // comes back to tool.call as an error result; its own event shows the deny, so it is marked here.
+  // The two events carry copies of the call, alike in tool_use_id.
+  const denied = new Set<string>()
+  on('classic.PreToolUse', async ($, e, next) => {
+    const r = await next(e)
+    if (r?.deny !== undefined && e.tool_use_id) denied.add(e.tool_use_id)
+    return r
+  })
+
   on('tool.call', async ($, e, next) => {
     const r = await next(e)
+    const blocked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id)
     if (!(TOOLS as readonly string[]).includes(e.tool)) return r
     try {
       const cwd = await $.session.cwd().catch(() => '')
@@ -186,7 +197,7 @@ export const register: Register = (on, options) => {
         at: new Date().toISOString(),
         tool: e.tool,
         target: shorten(targetOf(e as unknown as Record<string, unknown>), cwd),
-        outcome: outcomeOf(r),
+        outcome: blocked ? 'blocked' : outcomeOf(r),
         ...(e.agentId ? { agentId: e.agentId } : {}),
       }
       const all = await update($, entries, xs => [...xs, entry].slice(-KEEP))
