@@ -23,11 +23,13 @@ fi
 [ -n "$tsc" ] || { echo "typecheck: FAIL, no tsc (npm install typescript, or set TSC)"; exit 1; }
 files=$(ls hooks/*.ts hooks/*.tsx types/*.d.ts 2>/dev/null || true)
 echo "$files" | grep '^hooks/' | grep -v -E '\.test\.tsx?$|\.d\.ts$' | grep -q . || { echo "typecheck: FAIL, no hooks module (hooks/*.ts or *.tsx other than tests and .d.ts) to check"; exit 1; }
-# Claude Code lays a tsconfig.json beside a loaded mod (git ignores it); tsc 7 refuses to run with files on
-# the command line while one is present, so an untracked one is told to be ignored.
+# Claude Code lays a tsconfig.json beside a loaded mod (git ignores it); tsc 6 and later refuse to run with
+# files on the command line while one is present, so an untracked one is told to be ignored (tsc 5 ignores it
+# on its own and does not know the option).
 extra=""
-if [ -f tsconfig.json ] && ! git ls-files --error-unmatch tsconfig.json >/dev/null 2>&1; then extra="--ignoreConfig"; fi
-"$tsc" --noEmit $extra --target es2023 --lib es2023 --types "" --module esnext \
+major=$("$tsc" --version 2>/dev/null | sed -n 's/^Version \([0-9]*\).*/\1/p')
+if [ -f tsconfig.json ] && ! git ls-files --error-unmatch tsconfig.json >/dev/null 2>&1 && [ "${major:-0}" -ge 6 ]; then extra="--ignoreConfig"; fi
+"$tsc" --noEmit $extra --target es2023 --lib es2023 --module esnext \
   --moduleResolution bundler --strict --noUncheckedIndexedAccess --skipLibCheck \
   --jsx react --jsxFactory h --jsxFragmentFactory Fragment "$types" $files
 echo "typecheck: tsc --noEmit passed against $(head -1 "$types" | sed 's,^// ,,')"
