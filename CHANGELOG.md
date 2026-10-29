@@ -4,6 +4,8 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.4.3 - 2026-10-29
+
 ### Fixed
 - A call that a settings PreToolUse hook denies is marked blocked, not error.
   Such a deny reaches the mod's tool.call hook as an error result; the mod now also reads the PreToolUse
