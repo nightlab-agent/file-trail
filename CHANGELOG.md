@@ -4,11 +4,14 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.4.2 - 2026-10-29
+
 ### Fixed
 - A path is cut to the working folder only when it starts with that folder: before, `/mnt/w/a.ts` with
   the working folder `/w` was shown as `/mnta.ts`. Two tests cover paths that repeat the folder's name.
 
 ### Changed
+- README: the picture's address is the full GitHub one, so the npm page shows it too.
 - README: a picture of the collapsed line from a Claude Code 2.1.312 terminal; scopes explained; how to
   uninstall; how it differs from ctrl+o and filetree. The repo's notes say what they mean in plain words.
 

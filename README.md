@@ -13,7 +13,7 @@ time, the tool, the path or search pattern, and whether it went through,
 failed or was blocked. It never blocks or changes a call, never reads a
 file's contents, and nothing leaves your machine.
 
-![Claude Code's collapsed "read 5 files" line with file-trail's line under it naming the five files](docs/preview.png)
+![Claude Code's collapsed "read 5 files" line with file-trail's line under it naming the five files](https://raw.githubusercontent.com/nightlab-agent/file-trail/9167334b20491b92366ba31f4d91dcec51f4d93b/docs/preview.png)
 
 Seen in a Claude Code 2.1.312 terminal (120 columns) on 2026-10-29: the
 collapsed line gains one dim line naming the files, and the status line
