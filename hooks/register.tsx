@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { Register, ToolCallResult } from 'claude-code'
+import type { EngineInterface, Register, ToolCallResult } from 'claude-code'
 
 import type { Entry } from '../types'
 
@@ -88,9 +88,41 @@ export const fileText = (all: Entry[], session: string) =>
   all.map(x => `${x.at} ${lineOf(x).slice(9)}`).join('\n') +
   '\n'
 
+/** The trail file's state in this session: whether a write is in flight, whether one is owed, whether
+ * `<dir>/.gitignore` has been written, and the newest entries to write. */
+type TrailFile = { writing: boolean; owed: boolean; ignore: boolean; newest: { all: Entry[]; session: string } | null }
+
+/** One trail write at a time, always from the newest entries kept: a call that finds a write in flight
+ * marks the file as owed and goes on; the call doing the write then writes again, from the newest
+ * entries, until nothing is owed. So a late answer from the engine can never put the file back a step,
+ * no call waits on another call's write, and a failed write is made up by the next call, whose text
+ * holds every entry so far. Before the first write of a session: `<dir>/.gitignore` holding `*`, so git
+ * ignores the folder in every project with no step from the user (the trail names every file the
+ * session touched). */
+async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
+  if (file.writing) {
+    file.owed = true
+    return
+  }
+  file.writing = true
+  try {
+    do {
+      file.owed = false
+      if (!file.ignore) {
+        await $.fs.write(`${dir}/.gitignore`, '*\n')
+        file.ignore = true
+      }
+      if (file.newest) await $.fs.write(`${dir}/${file.newest.session || 'session'}.txt`, fileText(file.newest.all, file.newest.session))
+    } while (file.owed)
+  } finally {
+    file.writing = false
+  }
+}
+
 export const register: Register = (on, options) => {
-  // whether this session has written the trail folder's .gitignore yet
-  const done = { ignore: false }
+  const file: TrailFile = { writing: false, owed: false, ignore: false, newest: null }
+  // numbers the calls in the order their entries were kept, so the newest kept entries are the ones written
+  let seq = 0
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'file-trail', description: 'Show which files and searches this session touched, newest first, in a pane' })
@@ -158,6 +190,7 @@ export const register: Register = (on, options) => {
         ...(e.agentId ? { agentId: e.agentId } : {}),
       }
       const all = await update($, entries, xs => [...xs, entry].slice(-KEEP))
+      const mine = ++seq
       try {
         $.ui.status(`${entry.tool} ${entry.target}${entry.outcome === 'ok' ? '' : ` (${entry.outcome})`}`.slice(0, 80))
       } catch {
@@ -165,23 +198,17 @@ export const register: Register = (on, options) => {
       }
       // The `dir` option; a relative folder is under the project the session runs in.
       const dir = String(options.dir || '.file-trail')
-      {
-        let session = ''
-        try {
-          session = await $.session.id()
-        } catch {
-          // no session id on this host: one file for all
-        }
-        // Before the first write of a session: `<dir>/.gitignore` holding `*`, so git ignores the folder in
-        // every project with no step from the user. The trail names every file the session touched.
-        if (!done.ignore) {
-          await $.fs.write(`${dir}/.gitignore`, '*\n')
-          done.ignore = true
-        }
-        await $.fs.write(`${dir}/${session || 'session'}.txt`, fileText(all, session))
+      let session = ''
+      try {
+        session = await $.session.id()
+      } catch {
+        // no session id on this host: one file for all
       }
+      // a later call kept its entry while this one waited: its entries hold this one too
+      if (mine === seq) file.newest = { all, session }
+      await writeTrail($, dir, file)
     } catch {
-      // the trail misses one entry; the call's result is untouched
+      // the trail misses one write; the call's result is untouched
     }
     return r
   })

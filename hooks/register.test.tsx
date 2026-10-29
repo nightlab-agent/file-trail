@@ -205,3 +205,80 @@ test('before its first write the mod writes <dir>/.gitignore holding one line, *
   expect(writes.filter(w => w.path.endsWith('/.gitignore')).length).toBe(1)
   expect(writes.filter(w => w.path.endsWith('.txt')).length).toBe(2)
 })
+
+test('two calls at once: the first call\'s session id comes back late, and the file still holds both entries', async ($, on) => {
+  const writes: Written[] = []
+  on('session.cwd', () => ({ value: '/w' }))
+  on('fs.write', (_, e) => {
+    writes.push({ path: e.path, text: e.text })
+    return { value: undefined }
+  })
+  on('ui.status', () => ({ value: undefined }))
+  on('tool.call', () => ({ result: {} }))
+  // the first session id read waits until the second call has written
+  let release!: () => void
+  const held = new Promise<void>(resolve => {
+    release = resolve
+  })
+  let reads = 0
+  on('session.id', async () => {
+    if (++reads === 1) await held
+    return { value: 'sess-1' }
+  })
+  const first = $.tool.call({ tool: 'Read', file_path: '/w/first.ts' })
+  const second = $.tool.call({ tool: 'Read', file_path: '/w/second.ts' })
+  await second
+  const afterSecond = writes.filter(w => w.path.endsWith('.txt')).at(-1)!.text
+  expect(afterSecond).toContain('first.ts')
+  expect(afterSecond).toContain('second.ts')
+  release()
+  await first
+  const final = writes.filter(w => w.path.endsWith('.txt')).at(-1)!.text
+  expect(final).toContain('2 calls')
+  expect(final).toContain('first.ts')
+  expect(final).toContain('second.ts')
+})
+
+test('control: two calls one after the other write the file twice, the second with both entries', async ($, on) => {
+  const { writes } = world(on, '/w')
+  await $.tool.call({ tool: 'Read', file_path: '/w/first.ts' })
+  await $.tool.call({ tool: 'Read', file_path: '/w/second.ts' })
+  const texts = writes.filter(w => w.path.endsWith('.txt')).map(w => w.text)
+  expect(texts.length).toBe(2)
+  expect(texts[0]).toContain('1 calls')
+  expect(texts[1]).toContain('2 calls')
+  expect(texts[1]).toContain('second.ts')
+})
+
+test('three calls at once share one writer, the counts never going back; a failed write is made up by the next call', async ($, on) => {
+  const writes: Written[] = []
+  let fail = false
+  on('session.cwd', () => ({ value: '/w' }))
+  on('session.id', () => ({ value: 'sess-1' }))
+  on('ui.status', () => ({ value: undefined }))
+  on('tool.call', () => ({ result: {} }))
+  // every write takes a few turns of the event loop, so calls overlap it
+  on('fs.write', async (_, e) => {
+    for (let i = 0; i < 5; i++) await Promise.resolve()
+    if (fail) throw new Error('disk full')
+    writes.push({ path: e.path, text: e.text })
+    return { value: undefined }
+  })
+  await Promise.all([
+    $.tool.call({ tool: 'Read', file_path: '/w/a.ts' }),
+    $.tool.call({ tool: 'Read', file_path: '/w/b.ts' }),
+    $.tool.call({ tool: 'Read', file_path: '/w/c.ts' }),
+  ])
+  const counts = writes.filter(w => w.path.endsWith('.txt')).map(w => Number(w.text.match(/(\d+) calls/)![1]))
+  expect(counts.at(-1)).toBe(3)
+  for (let i = 1; i < counts.length; i++) expect(counts[i]!).toBeGreaterThanOrEqual(counts[i - 1]!)
+  expect(writes.filter(w => w.path.endsWith('/.gitignore')).length).toBe(1)
+  // a write that fails costs nothing lasting: the next call's text holds every entry
+  fail = true
+  await $.tool.call({ tool: 'Read', file_path: '/w/d.ts' })
+  fail = false
+  await $.tool.call({ tool: 'Read', file_path: '/w/e.ts' })
+  const last = writes.filter(w => w.path.endsWith('.txt')).at(-1)!.text
+  expect(last).toContain('5 calls')
+  expect(last).toContain('d.ts')
+})

@@ -8,7 +8,7 @@
       "name": "file-trail",
       "source": "./",
       "description": "Which file each Read, Edit and Write touched (Glob and Grep too, where the build has them as tools), with the time and whether it was blocked, in a side pane and a local file.",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "category": "productivity"
     }
   ],

@@ -4,6 +4,21 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.4.1 - 2026-10-29 - a late session id no longer loses an entry
+
+### Fixed
+- Two file calls at once each wait on the session id before writing the trail file. When the first call's answer
+  came back late, its text (one entry short) landed on top of the second call's, and the second entry was gone
+  from the file until the next call. Now one write runs at a time, from the newest entries kept (the calls
+  are numbered in the order their state updates resolved); a call that finds a write in flight marks the
+  file as owed and goes on, and the writing call writes again until nothing is owed, then returns. So a
+  call never waits on an earlier call's write, and the file never goes back a step. A failed write is made
+  up by the next call. Found by karanb192 reviewing awesome-claude-code-mods PR #427; the test fails on 0.4.0.
+- The `.gitignore` write happens inside that same single writer, so two first calls at once write it once.
+
+### Changed
+- `tsconfig.json`, which Claude Code lays beside a loaded mod with its type declarations, is ignored by git (it appeared here on 2026-10-29 after a session loaded the mod). `tests/typecheck.sh` tells tsc to ignore such an untracked file: tsc 7.0.2 stopped on it with error TS5112.
+
 ## 0.4.0 - 2026-10-29 - the trail folder is kept out of git
 
 ### Added
@@ -22,16 +37,16 @@ The form is Keep a Changelog; versions follow SemVer.
 ### Added
 - README: a Build your own section names the free template (mod-ready) and the paid Mod Field Kit.
 
-## 0.3.1 - 2026-10-28 - the gate type-checks
+## 0.3.1 - 2026-10-28 - the release script type-checks
 
 ### Changed
 - README: the one-line install now sits under the README's first paragraph, with a link to the full Install section.
 - package.json drops `publishConfig` (the publish service refuses it; the package is already public on npm, so nothing changes for installs).
 - The checklist fails (was: warns) on a `publishConfig` in package.json, and fails on a package.json repository that is not the plugin's own GitHub repo.
 - `tests/typecheck.sh` fails when `TSC` is neither an executable nor a command on PATH (before, it fell back to PATH), or when there is no hooks module file to check (before, it passed).
-- The release gate type-checks the hooks module, its tests and the state contract with `tsc --noEmit` against the
+- The release script type-checks the hooks module, its tests and the state contract with `tsc --noEmit` against the
   engine's own declarations (`tests/typecheck.sh`, the compiler options the declarations' header gives a hooks module).
-  No `tsc` or no declarations fails the gate; it never skips.
+  No `tsc` or no declarations fails the release script; it never skips.
 
 ### Fixed
 - The README says Glob and Grep are recorded only where the build has them as tools (the 2.1.310 declarations name neither; searches there run through Bash, which this mod does not record).
@@ -70,7 +85,7 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ### Added
 - `package.json`: the plugin is published to npm as `@nightlab-agent/file-trail` (plugin files only, no scripts), so a marketplace can install it from an npm source.
-- The release gate's version check reads `package.json` too (five files).
+- The release script's version check reads `package.json` too (five files).
 
 ### Fixed
 - README: the test count said 9; there are 12.
@@ -88,4 +103,4 @@ The form is Keep a Changelog; versions follow SemVer.
 - Side pane File trail (newest 40, blocked red, errors yellow) and `/file-trail` to open it.
 - Status line with the newest call.
 - `$FILE_TRAIL_DIR/<session>.txt`, else `$HOME/.file-trail/<session>.txt`, rewritten whole, last 1000 calls.
-- 9 tests under the engine's test kit; release gate `tests/release.sh` (validate, test, version string in four files).
+- 9 tests under the engine's test kit; release script `tests/release.sh` (validate, test, version string in four files).
