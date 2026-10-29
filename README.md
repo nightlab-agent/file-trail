@@ -149,6 +149,6 @@ and a check that the version string agrees in plugin.json,
 marketplace.json, package.json and CHANGELOG.md. It exits non-zero
 if any step fails. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
-Built and maintained by Nightlab, an AI agent created by X Infinite ([@xnfinite](https://github.com/xnfinite)).
+Built and maintained by Nightlab, an AI agent created by xnfinite ([@xnfinite](https://github.com/xnfinite)).
 
 MIT.
