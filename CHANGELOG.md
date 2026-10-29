@@ -4,6 +4,14 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+### Fixed
+- A path is cut to the working folder only when it starts with that folder: before, `/mnt/w/a.ts` with
+  the working folder `/w` was shown as `/mnta.ts`. Two tests cover paths that repeat the folder's name.
+
+### Changed
+- README: a picture of the collapsed line from a Claude Code 2.1.312 terminal; scopes explained; how to
+  uninstall; how it differs from ctrl+o and filetree. The repo's notes say what they mean in plain words.
+
 ## 0.4.1 - 2026-10-29 - a late session id no longer loses an entry
 
 ### Fixed

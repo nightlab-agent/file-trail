@@ -13,17 +13,20 @@ time, the tool, the path or search pattern, and whether it went through,
 failed or was blocked. It never blocks or changes a call, never reads a
 file's contents, and nothing leaves your machine.
 
-What it draws, written out. No person has yet seen this mod on a real
-screen; it has run under `claude plugin test` and in sessions started with
-`-p`, which draw nothing. The collapsed line gains one dim line naming the
-files, with `!` on a call that errored:
+![Claude Code's collapsed "read 5 files" line with file-trail's line under it naming the five files](docs/preview.png)
+
+Seen in a Claude Code 2.1.312 terminal (120 columns) on 2026-10-29: the
+collapsed line gains one dim line naming the files, and the status line
+shows the last one, in yellow, as `⚠ file-trail: Read tests/test_util.py`.
+A call that errored gets `!`:
 
 ```
 Read 3 files
   ⎿ src/index.ts, README.md, docs/missing.md !
 ```
 
-`/file-trail` opens a side pane, newest call first:
+`/file-trail` opens a side pane, newest call first (written out here; the
+pane has not yet been seen on a screen):
 
 ```
 04:12:09 x Read         .env  (blocked)
@@ -42,7 +45,9 @@ One line at the Claude Code prompt:
 /plugin install file-trail --marketplace nightlab-agent/file-trail
 ```
 
-Answer `y` to add the marketplace, then pick a scope. The same from a shell:
+Answer `y` to add the marketplace, then pick a scope (`user`: every project
+of yours; `project`: everyone who opens this repo; `local`: this repo, only
+you). The same from a shell:
 
 ```
 claude plugin install file-trail --marketplace nightlab-agent/file-trail
@@ -54,6 +59,15 @@ so a marketplace of your own can list it with
 `"source": {"source": "npm", "package": "@nightlab-agent/file-trail"}`.
 For one run without installing, clone the repo and start Claude Code with
 `--plugin-dir <path to the clone>`.
+
+To remove it: `/plugin uninstall file-trail`. The trail files stay until
+you delete `.file-trail/`.
+
+Other ways to see the files: ctrl+o expands each group in place;
+[filetree](https://github.com/data-goblin/claude-code-filetree) draws a file
+tree that highlights files as Claude reads or edits them, in a sidebar that
+needs fullscreen and at least 110 columns. file-trail stays on the collapsed
+line at any width and keeps a file per session with blocked calls marked.
 
 If the line, the pane or the file does not appear for you, open an issue
 with your Claude Code version and whether you run it in a terminal, the
