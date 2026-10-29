@@ -124,7 +124,7 @@ The folder is the mod's one option, `dir` (set it in `/config`). A relative
 path is under the project; an absolute path keeps every project's trails in
 one place.
 The `.gitignore` is written only in a folder named `.file-trail` (the default,
-or an absolute path ending in it). A folder of another name may hold your own
+or an absolute path ending in it, with `/` or `\`). A folder of another name may hold your own
 files (it could even be `.`), so file-trail leaves git alone there: if it is
 inside a project, add it to that project's `.gitignore`.
 
@@ -142,8 +142,9 @@ the events Claude Code hands it. Everything stays on your machine.
 | `tool.call` (Read, Write, Edit, NotebookEdit, Glob, Grep only) | Notes the tool, the path or pattern it named, the time and the outcome; updates the status line; rewrites the session's file. | Nothing: the call runs as asked and its result passes through. |
 | `classic.PreToolUse` | Notes whether a settings PreToolUse hook (such as a security hook) denied the call, so the trail marks it blocked rather than error. | Nothing: the decision of the hooks beneath passes through unchanged. |
 
-One limit: a deny from a hook your administrator manages (managed settings, or a mod in their tier) is made
-above every mod, so file-trail never sees it and marks the call `error`, with the reason the hook gave.
+One limit: a hook your administrator manages (managed settings, or a mod in their tier) runs above every
+mod, so file-trail never sees its deny. A deny from its PreToolUse hook is marked `error`; a deny it makes
+before the call reaches the mods leaves no line at all.
 
 ## What it does not do
 

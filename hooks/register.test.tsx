@@ -216,6 +216,12 @@ test('with dir set to the project itself, the project\'s own .gitignore is left 
   expect(writes.filter(w => w.path.endsWith('.txt')).length).toBe(1)
 })
 
+test('comparison: a Windows folder named .file-trail gets its .gitignore', { options: { dir: 'E:\\trails\\.file-trail' } }, async ($, on) => {
+  const { writes } = world(on, '/work/app')
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/src/index.ts' })
+  expect(writes[0]!.path.endsWith('.gitignore')).toBe(true)
+})
+
 test('two calls at once: the first call\'s session id comes back late, and the file still holds both entries', async ($, on) => {
   const writes: Written[] = []
   on('session.cwd', () => ({ value: '/w' }))

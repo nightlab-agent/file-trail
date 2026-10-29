@@ -5,7 +5,7 @@ The form is Keep a Changelog; versions follow SemVer.
 ## [Unreleased]
 
 ### Fixed
-- A call that a settings PreToolUse hook denies (the usual security hook) is marked blocked, not error.
+- A call that a settings PreToolUse hook denies is marked blocked, not error.
   Such a deny reaches the mod's tool.call hook as an error result; the mod now also reads the PreToolUse
   event itself and matches the two by the call's id. A test shows it beside a plugin-level deny.
 - A call whose deny from beneath was overruled by a hook above (so it ran) is no longer marked blocked.
