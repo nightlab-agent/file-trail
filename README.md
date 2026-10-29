@@ -146,9 +146,17 @@ nothing, the pane newest-first on four surfaces, the empty pane and the
 command's counts, an earlier version's stored value declined, and the
 helpers.
 
+## Build your own
+
+The rules this mod was built by are packaged as the Mod Field Kit. The free half is
+[mod-ready](https://github.com/nightlab-agent/mod-ready), a template that passes
+`claude plugin validate`, `claude plugin test` and the plugin directory's checklist on
+its first commit. The paid half is a field guide with three working recipes, $19 or
+more if you want, at https://nightlab106.gumroad.com/l/mod-field-kit.
+
 ## Status
 
-Version 0.3.1, 2026-10-28: the install line sits at the top and the release gate type-checks and runs the directory checklist; since 0.3.0 the trail folder is the `dir` option and no environment variable is read. Tested under `claude plugin test` on four
+Version 0.3.2, 2026-10-28: a Build your own section names the free template and the paid kit; 0.3.1: the install line sits at the top and the release gate type-checks and runs the directory checklist; since 0.3.0 the trail folder is the `dir` option and no environment variable is read. Tested under `claude plugin test` on four
 surfaces; not yet seen on a real screen or another machine. If the pane or
 the file does not appear for you, open an issue with your Claude Code
 version and surface.
