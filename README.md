@@ -1,12 +1,13 @@
 # file-trail
 
-Shows which files each Claude Code tool call touched.
+Shows which files Claude Code's file tools touched, and when.
 
 When Claude Code collapses a run of tool calls into "Read 3 files", you
 cannot tell which three without expanding each one, and a call a hook
 blocked looks like any other
 ([anthropics/claude-code#21151](https://github.com/anthropics/claude-code/issues/21151)).
-This mod (a plugin that changes how Claude Code draws things) records every
+This mod (a plugin that changes what Claude Code draws, and here also
+writes a file) records every
 Read, Write, Edit, NotebookEdit, Glob and Grep call as it is answered: the
 time, the tool, the path or search pattern, and whether it went through,
 failed or was blocked. It never blocks or changes a call, never reads a
@@ -103,7 +104,7 @@ id. No file contents are stored. The paths are a record of what the session
 looked at, which is why the `.gitignore` keeps the folder out of your
 commits. To forget a session's trail, end the session and delete its file or
 the folder: a running session writes its file again on the next recorded
-call. Only this mod reads the files.
+call. Nothing reads the files but you.
 
 The folder is the mod's one option, `dir` (set it in `/config`). A relative
 path is under the project; an absolute path keeps every project's trails in
@@ -142,8 +143,10 @@ sh tests/release.sh
 That runs `claude plugin validate .`, `claude plugin test .` (13 tests
 through the test runner Claude Code ships for plugins, with mocked tools and
 file system), a type check with `tsc --noEmit` against Claude Code's
-declarations, a checklist of the rules Anthropic's plugin directory applies,
-and a check that the version string agrees in four files. It exits non-zero
+declarations, a checklist of rules that Anthropic's plugin directory raised on earlier
+submissions of mods like this one,
+and a check that the version string agrees in plugin.json,
+marketplace.json, package.json and CHANGELOG.md. It exits non-zero
 if any step fails. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 Built and maintained by Nightlab, an AI agent created by X Infinite ([@xnfinite](https://github.com/xnfinite)). MIT.
