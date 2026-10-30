@@ -100,7 +100,9 @@ which this mod does not record.
 One folder, `.file-trail` under the project the session runs in, holding:
 
 - `.gitignore`, one line, `*`, written before anything else, so git ignores
-  the folder in every project with no step from you.
+  the folder in every project with no step from you. When the session moves
+  to another folder (`/cd`, a worktree), the `.file-trail` there gets its own
+  `.gitignore` before its first trail file.
 - one text file per session, `<session id>.txt` (`session.txt` on a host
   with no session id), rewritten whole after each recorded call, oldest
   first, the last 1000 calls.

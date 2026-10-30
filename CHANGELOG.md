@@ -4,6 +4,16 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.4.4 - 2026-10-30
+
+### Fixed
+- After the session moved to another folder (`/cd`, a worktree), the trail was written in that folder's
+  `.file-trail` with no `.gitignore`, so `git add -A` there could commit the list of files the session read.
+  Each new folder now gets its `.gitignore` before its first trail file.
+- When an earlier call's state write was answered late, the trail file could go back a step (two calls,
+  then one) and the status line show the older call. Calls are now ordered by when their entries were
+  saved, not when the answer came back.
+
 ## 0.4.3 - 2026-10-29
 
 ### Fixed

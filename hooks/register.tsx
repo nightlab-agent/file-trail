@@ -89,8 +89,15 @@ export const fileText = (all: Entry[], session: string) =>
   '\n'
 
 /** The trail file's state in this session: whether a write is in flight, whether one is owed, whether
- * `<dir>/.gitignore` has been written, and the newest entries to write. */
-type TrailFile = { writing: boolean; owed: boolean; ignore: boolean; newest: { all: Entry[]; session: string } | null }
+ * the folder is the mod's own (so it gets a .gitignore), the working folder its .gitignore was last
+ * written under, and the newest entries to write with the number of the call that kept them. */
+type TrailFile = {
+  writing: boolean
+  owed: boolean
+  own: boolean
+  ignoredUnder: string | null
+  newest: { n: number; all: Entry[]; session: string } | null
+}
 
 /** One trail write at a time, always from the newest entries kept: a call that finds a write in flight
  * marks the file as owed and goes on; the call doing the write then writes again, from the newest
@@ -108,9 +115,13 @@ async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
   try {
     do {
       file.owed = false
-      if (!file.ignore) {
-        await $.fs.write(`${dir}/.gitignore`, '*\n')
-        file.ignore = true
+      // a relative dir follows the session's folder (/cd, a worktree): each new folder gets its .gitignore
+      if (file.own) {
+        const cwd = await $.session.cwd().catch(() => '')
+        if (file.ignoredUnder !== cwd) {
+          await $.fs.write(`${dir}/.gitignore`, '*\n')
+          file.ignoredUnder = cwd
+        }
       }
       if (file.newest) await $.fs.write(`${dir}/${file.newest.session || 'session'}.txt`, fileText(file.newest.all, file.newest.session))
     } while (file.owed)
@@ -123,8 +134,9 @@ export const register: Register = (on, options) => {
   // Only a folder named .file-trail is the mod's own; any other may hold the user's files (even be the
   // project itself, `.`), so no .gitignore is written there.
   const own = String(options.dir || '.file-trail').replace(/[\\/]+$/, '').split(/[\\/]/).at(-1) === '.file-trail'
-  const file: TrailFile = { writing: false, owed: false, ignore: !own, newest: null }
-  // numbers the calls in the order their entries were kept, so the newest kept entries are the ones written
+  const file: TrailFile = { writing: false, owed: false, own, ignoredUnder: null, newest: null }
+  // numbers the calls in the order their entries were saved: the attempt `update` saves read the value the
+  // call before it saved, so it runs after that call's attempt, whenever either call's answer comes back
   let seq = 0
   on('session.start', async ($, e, next) => {
     try {
@@ -204,12 +216,18 @@ export const register: Register = (on, options) => {
         outcome: blocked ? 'blocked' : outcomeOf(r),
         ...(e.agentId ? { agentId: e.agentId } : {}),
       }
-      const all = await update($, entries, xs => [...xs, entry].slice(-KEEP))
-      const mine = ++seq
-      try {
-        $.ui.status(`${entry.tool} ${entry.target}${entry.outcome === 'ok' ? '' : ` (${entry.outcome})`}`.slice(0, 80))
-      } catch {
-        // a surface with no status line
+      let mine = 0
+      const all = await update($, entries, xs => {
+        mine = ++seq
+        return [...xs, entry].slice(-KEEP)
+      })
+      // a call saved after this one has shown its own entry already
+      if (mine === seq) {
+        try {
+          $.ui.status(`${entry.tool} ${entry.target}${entry.outcome === 'ok' ? '' : ` (${entry.outcome})`}`.slice(0, 80))
+        } catch {
+          // a surface with no status line
+        }
       }
       // The `dir` option; a relative folder is under the project the session runs in.
       const dir = String(options.dir || '.file-trail')
@@ -219,8 +237,8 @@ export const register: Register = (on, options) => {
       } catch {
         // no session id on this host: one file for all
       }
-      // a later call kept its entry while this one waited: its entries hold this one too
-      if (mine === seq) file.newest = { all, session }
+      // a call saved later has kept its entries already, and they hold this one too
+      if (!file.newest || mine > file.newest.n) file.newest = { n: mine, all, session }
       await writeTrail($, dir, file)
     } catch {
       // the trail misses one write; the call's result is untouched
