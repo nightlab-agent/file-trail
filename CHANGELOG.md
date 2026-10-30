@@ -4,6 +4,12 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.4.5 - 2026-10-30
+
+### Fixed
+- After a `/clear`, the new conversation's trail file and pane still listed the cleared conversation's calls.
+  A `/clear` now empties the list; the cleared session's own file is left as it was.
+
 ## 0.4.4 - 2026-10-30
 
 ### Fixed

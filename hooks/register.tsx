@@ -196,6 +196,21 @@ export const register: Register = (on, options) => {
   // comes back to tool.call as an error result; its own event shows the deny, so it is marked here.
   // The two events carry copies of the call, alike in tool_use_id.
   const denied = new Set<string>()
+  // A /clear ends the conversation, not the process: it goes on under a new session id with no
+  // session.start, so the cleared conversation's calls would carry into the new session's trail and pane.
+  on('session.end', async ($, e, next) => {
+    const r = await next(e)
+    if (e.reason === 'clear') {
+      try {
+        await update($, entries, () => [])
+        file.newest = null
+      } catch {
+        // the old calls stay in the pane until the next call
+      }
+    }
+    return r
+  })
+
   on('classic.PreToolUse', async ($, e, next) => {
     const r = await next(e)
     if (r?.deny !== undefined && e.tool_use_id) denied.add(e.tool_use_id)

@@ -138,6 +138,7 @@ the events Claude Code hands it. Everything stays on your machine.
 | Hook | What it does | What it changes |
 |---|---|---|
 | `session.start` | Registers the `/file-trail` command. | Nothing. |
+| `session.end` | On a `/clear`, empties the list of calls, so the new conversation's trail, pane and file start empty; the cleared session's file stays as it was. Any other end: nothing. | Nothing. |
 | `command.run` (`/file-trail`) | Opens the side pane. | Nothing. |
 | `ui.render` (its own pane) | Draws the newest calls from the list in memory. | Nothing. |
 | `ui.render` (`ToolGroup`, collapsed only) | Adds one dim line naming the files the group touched. | The collapsed group gains that one line. Claude Code's own line and the expanded view are left as drawn. |
