@@ -4,6 +4,9 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+- Tests: a file in a folder whose name starts with the working folder's name (`/work/app2` beside
+  `/work/app`) keeps its full path, in a collapsed group and in the trail file. No change to the code.
+
 ## 0.4.5 - 2026-10-30
 
 ### Fixed

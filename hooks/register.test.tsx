@@ -298,3 +298,24 @@ test('three calls at once share one writer, the counts never going back; a faile
   expect(last).toContain('5 calls')
   expect(last).toContain('d.ts')
 })
+
+// Look-alikes: a folder whose name starts with the working folder's name is another folder.
+test('look-alikes: /work/app2/a.ts beside /work/app/a.ts stays two names in the group and in the file', async ($, on) => {
+  on('session.cwd', () => ({ value: '/work/app' }))
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>Read 2 files</Text>
+  })
+  const calls = [call('Read', { file_path: '/work/app/a.ts' }), call('Read', { file_path: '/work/app2/a.ts' })]
+  const ui = await $.ui.mount({ ...GROUP, surface: 'terminal', props: { calls, isActive: false, isExpanded: false } })
+  expect((await ui.find({ type: 'Text', text: /⎿/ }))?.text).toBe('  ⎿ a.ts, /work/app2/a.ts')
+  await ui.unmount()
+})
+test('look-alikes: the trail file records the same two Reads under two names', { options: { dir: '/trail' } }, async ($, on) => {
+  const { writes } = world(on, '/work/app')
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/a.ts' } as never)
+  await $.tool.call({ tool: 'Read', file_path: '/work/app2/a.ts' } as never)
+  const last = writes.filter(w => !w.path.endsWith('.gitignore')).at(-1)!.text
+  expect(last).toContain(' a.ts')
+  expect(last).toContain(' /work/app2/a.ts')
+})
