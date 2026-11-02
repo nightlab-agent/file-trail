@@ -1,6 +1,9 @@
 # file-trail
 
-Shows which files Claude Code's file tools touched, and when.
+When Claude Code folds file reads and searches into "Read 3 files", you can't
+tell which three without expanding it. file-trail adds a line under it naming
+them, and logs each Read, Write, Edit, NotebookEdit, Glob and Grep call, with
+its time, to a text file in your project.
 
 Install at the Claude Code prompt (more under [Install](#install)):
 
