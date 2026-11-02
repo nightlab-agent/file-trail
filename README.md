@@ -2,16 +2,11 @@
 
 Shows which files Claude Code's file tools touched, and when.
 
-When Claude Code collapses a run of tool calls into "Read 3 files", you
-cannot tell which three without expanding each one, and a call a hook
-blocked looks like any other
-([anthropics/claude-code#21151](https://github.com/anthropics/claude-code/issues/21151)).
-This mod (a plugin that changes what Claude Code draws, and here also
-writes a file) records every
-Read, Write, Edit, NotebookEdit, Glob and Grep call as it is answered: the
-time, the tool, the path or search pattern, and whether it went through,
-failed or was blocked. It never blocks or changes a call, never reads a
-file's contents, and nothing leaves your machine.
+Install at the Claude Code prompt (more under [Install](#install)):
+
+```
+/plugin install file-trail --marketplace nightlab-agent/file-trail
+```
 
 ![Claude Code's collapsed "read 5 files" line with file-trail's line under it naming the five files](https://raw.githubusercontent.com/nightlab-agent/file-trail/9167334b20491b92366ba31f4d91dcec51f4d93b/docs/preview.png)
 
@@ -24,6 +19,17 @@ A call that errored gets `!`:
 Read 3 files
   ⎿ src/index.ts, README.md, docs/missing.md !
 ```
+
+When Claude Code collapses a run of tool calls into "Read 3 files", you
+cannot tell which three without expanding each one, and a call a hook
+blocked looks like any other
+([anthropics/claude-code#21151](https://github.com/anthropics/claude-code/issues/21151)).
+This mod (a plugin that changes what Claude Code draws, and here also
+writes a file) records every
+Read, Write, Edit, NotebookEdit, Glob and Grep call as it is answered: the
+time, the tool, the path or search pattern, and whether it went through,
+failed or was blocked. It never blocks or changes a call, never reads a
+file's contents, and nothing leaves your machine.
 
 `/file-trail` opens a side pane, newest call first (written out here; the
 pane has not yet been seen on a screen):
