@@ -179,15 +179,18 @@ async function ignore($: EngineInterface, dir: string, file: TrailFile) {
 const trailPath = (dir: string, session: string) => `${dir}/${session || 'session'}.txt`
 
 /** A conversation a /clear or a resume ended: its id, its whole list (the calls that began in it and
- * came back after the end too), its count, and its writes, one after another. */
-type Ended = { gen: number; session: string; all: Entry[]; calls: number; saving: Promise<void> }
+ * came back after the end too), its count, its writes, one after another, and whether a later
+ * conversation of the same id (a resume back into it) has written that file since. */
+type Ended = { gen: number; session: string; all: Entry[]; calls: number; saving: Promise<void>; resumed: boolean }
 
 /** Writes the ended conversation's file from its newest list, after any write in flight (which may be
- * of its older list), so the file never goes back a step. */
+ * of its older list), so the file never goes back a step. Once a conversation resumed into the same id
+ * has written the file, it is that one's, and the ended list is not written over it. */
 const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended) => {
   gone.saving = gone.saving
     .then(async () => {
       while (file.writing) await file.writing
+      if (gone.resumed) return
       await ignore($, dir, file)
       await $.fs.write(trailPath(dir, gone.session), fileText(gone.all, gone.session, Math.max(gone.calls, gone.all.length)))
     })
@@ -288,7 +291,7 @@ export const register: Register = (on, options) => {
   on('session.end', async ($, e, next) => {
     const ends = e.reason === 'clear' || e.reason === 'resume'
     if (ends) {
-      const gone: Ended = { gen: generation, session: e.sessionId, all: [], calls, saving: Promise.resolve() }
+      const gone: Ended = { gen: generation, session: e.sessionId, all: [], calls, saving: Promise.resolve(), resumed: false }
       ended.set(gone.gen, gone)
       generation++
       calls = 0
@@ -376,6 +379,8 @@ export const register: Register = (on, options) => {
         // the session id read after an end names the next conversation: the end wrote this call's file
         if (generation !== mineGen) return r
         if (!file.newest || mine > file.newest.n) file.newest = { n: mine, all, session, calls: Math.max(count, all.length) }
+        // a resume back into an ended id: this conversation's list owns the file from here on
+        for (const gone of ended.values()) if (gone.session === file.newest.session) gone.resumed = true
         await writeTrail($, dir, file)
       } catch {
         // the trail misses one write; the call's result is untouched
