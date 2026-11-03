@@ -70,6 +70,21 @@ export const groupNames = (calls: ReadonlyArray<{ tool: string; input: unknown; 
     .filter(x => x.name !== '')
     .map(x => (x.isErrored ? `${x.name} !` : x.name))
 
+// East Asian wide letters and emoji take two terminal columns.
+const WIDE = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1FAFF}\u{20000}-\u{3FFFD}]/u
+/** The columns a terminal gives the text. */
+export const width = (s: string) => [...s].reduce((n, ch) => n + (WIDE.test(ch) ? 2 : 1), 0)
+/** The text cut to `cols` columns, whole letters only, `…` at a cut. */
+export const cut = (s: string, cols: number) => {
+  if (width(s) <= cols) return s
+  let out = ''
+  for (const ch of s) {
+    if (width(out + ch) > cols - 1) break
+    out += ch
+  }
+  return `${out}…`
+}
+
 /** One line under the group: the names, comma separated, cut to the width with how many are left. */
 export const groupLine = (names: string[], columns: number) => {
   const room = Math.max(20, columns - 4)
@@ -78,15 +93,25 @@ export const groupLine = (names: string[], columns: number) => {
     const sep = i === 0 ? '' : ', '
     const rest = names.length - i - 1
     const more = rest > 0 ? `, +${rest} more` : ''
-    if (i > 0 && (line + sep + names[i] + more).length > room) return `${line}, +${names.length - i} more`
+    if (width(line + sep + names[i] + more) > room) {
+      if (i > 0) return `${line}, +${names.length - i} more`
+      // a first name too long on its own is cut, so the line still fits
+      return `${line}${cut(names[i]!, room - width(line) - width(more))}${more}`
+    }
     line += sep + names[i]
   }
   return line
 }
 
+/** The status text at most 80 UTF-16 units, never ending in half of a pair. */
+export const statusText = (s: string) => {
+  const t = s.slice(0, 80)
+  return /[\uD800-\uDBFF]$/.test(t) ? t.slice(0, -1) : t
+}
+
 /** The file's whole text, oldest first, one line per entry. */
-export const fileText = (all: Entry[], session: string) =>
-  `# file-trail${session ? ` ${session}` : ''}: ${all.length} calls (x blocked, ! error)\n` +
+export const fileText = (all: Entry[], session: string, calls = all.length) =>
+  `# file-trail${session ? ` ${session}` : ''}: ${calls} calls (x blocked, ! error)\n` +
   all.map(x => `${x.at} ${lineOf(x).slice(9)}`).join('\n') +
   '\n'
 
@@ -98,7 +123,7 @@ type TrailFile = {
   owed: boolean
   own: boolean
   ignoredUnder: string | null
-  newest: { n: number; all: Entry[]; session: string } | null
+  newest: { n: number; all: Entry[]; session: string; calls: number } | null
 }
 
 /** One trail write at a time, always from the newest entries kept: a call that finds a write in flight
@@ -125,7 +150,7 @@ async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
           file.ignoredUnder = cwd
         }
       }
-      if (file.newest) await $.fs.write(`${dir}/${file.newest.session || 'session'}.txt`, fileText(file.newest.all, file.newest.session))
+      if (file.newest) await $.fs.write(`${dir}/${file.newest.session || 'session'}.txt`, fileText(file.newest.all, file.newest.session, file.newest.calls))
     } while (file.owed)
   } finally {
     file.writing = false
@@ -140,6 +165,11 @@ export const register: Register = (on, options) => {
   // numbers the calls in the order their entries were saved: the attempt `update` saves read the value the
   // call before it saved, so it runs after that call's attempt, whenever either call's answer comes back
   let seq = 0
+  // The conversation's number, raised at a /clear or a resume, so a call that began before one keeps
+  // nothing in the next conversation's trail.
+  let generation = 0
+  // Every call of the conversation kept in this process, the ones past KEEP too.
+  let calls = 0
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'file-trail', description: 'Show which files and searches this session touched, newest first, in a pane' })
@@ -170,7 +200,7 @@ export const register: Register = (on, options) => {
     await $.ui.open({ id: PANE, title: TITLE })
     const all = await read($, entries)
     const blocked = all.filter(x => x.outcome === 'blocked').length
-    return { text: `File trail opened: ${all.length} calls this session, ${blocked} blocked.` }
+    return { text: `File trail opened: ${Math.max(calls, all.length)} calls this session, ${blocked} blocked.` }
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
@@ -198,11 +228,14 @@ export const register: Register = (on, options) => {
   // comes back to tool.call as an error result; its own event shows the deny, so it is marked here.
   // The two events carry copies of the call, alike in tool_use_id.
   const denied = new Set<string>()
-  // A /clear ends the conversation, not the process: it goes on under a new session id with no
-  // session.start, so the cleared conversation's calls would carry into the new session's trail and pane.
+  // A /clear or a resume ends the conversation, not the process: it goes on under another session id
+  // with no session.start, so the ended conversation's calls would carry into the next one's trail and pane.
   on('session.end', async ($, e, next) => {
     const r = await next(e)
-    if (e.reason === 'clear') {
+    if (e.reason === 'clear' || e.reason === 'resume') {
+      generation++
+      file.newest = null
+      calls = 0
       try {
         await update($, entries, () => [])
         file.newest = null
@@ -220,6 +253,7 @@ export const register: Register = (on, options) => {
   })
 
   on('tool.call', async ($, e, next) => {
+    const mineGen = generation
     const r = await next(e)
     // a deny an outer hook overruled let the call run: only a call that came back refused is blocked
     const blocked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id) && r.isError === true
@@ -235,13 +269,18 @@ export const register: Register = (on, options) => {
       }
       let mine = 0
       const all = await update($, entries, xs => {
+        // a call that began in an ended conversation is not the next one's
+        if (generation !== mineGen) return xs
         mine = ++seq
         return [...xs, entry].slice(-KEEP)
       })
+      if (mine === 0) return r
+      // counted once the entry is kept: an attempt `update` retried runs its function again
+      const count = generation === mineGen ? ++calls : 0
       // a call saved after this one has shown its own entry already
       if (mine === seq) {
         try {
-          $.ui.status(`${entry.tool} ${entry.target}${entry.outcome === 'ok' ? '' : ` (${entry.outcome})`}`.slice(0, 80))
+          $.ui.status(statusText(`${entry.tool} ${entry.target}${entry.outcome === 'ok' ? '' : ` (${entry.outcome})`}`))
         } catch {
           // a surface with no status line
         }
@@ -255,7 +294,9 @@ export const register: Register = (on, options) => {
         // no session id on this host: one file for all
       }
       // a call saved later has kept its entries already, and they hold this one too
-      if (!file.newest || mine > file.newest.n) file.newest = { n: mine, all, session }
+      // the session id read after an end names the next conversation: this call's entries are not its
+      if (generation !== mineGen) return r
+      if (!file.newest || mine > file.newest.n) file.newest = { n: mine, all, session, calls: Math.max(count, all.length) }
       await writeTrail($, dir, file)
     } catch {
       // the trail misses one write; the call's result is untouched

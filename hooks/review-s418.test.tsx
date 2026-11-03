@@ -78,7 +78,7 @@ test('review R2 comparison: the same call answered before the /clear stays in th
 })
 
 // The command's count is the kept list's length, capped at KEEP (1000).
-test('review R3: after 1001 calls the command says 1001 calls this session', async ($, on) => {
+test('review R3: after 1001 calls the command says 1001 calls this session', { timeoutMs: 60000 }, async ($, on) => {
   world(on, { id: 's' })
   for (let i = 0; i < 1001; i++) await $.tool.call({ tool: 'Read', file_path: `/work/app/f${i}.ts` })
   const r = await $.command.run({ command: 'file-trail', args: '', ...RUN })

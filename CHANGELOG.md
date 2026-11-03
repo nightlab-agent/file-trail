@@ -7,10 +7,19 @@ The form is Keep a Changelog; versions follow SemVer.
 ### Fixed
 - A file under a Windows working folder is shown relative to it, as on macOS and Linux
   (`hooks/review-s418ts.test.tsx`).
+- A resume to another conversation in the same window now empties the list too, as a `/clear` does;
+  before, the resumed conversation's trail listed the calls of the one it replaced
+  (`hooks/review-s418.test.tsx`, R1). Its file is written from the resume on, so calls from its
+  earlier run are not in it.
+- A call that started before a `/clear` or a resume and answered after it no longer lands in the
+  next conversation's trail, pane or file (R2, and `hooks/review-s418ts.test.tsx`).
+- `/file-trail` and the file's first line count every call past 1000; the pane and the file still
+  keep the last 1000 (R3).
+- The status line is never cut in the middle of an emoji (R4), and the line under a collapsed group
+  fits the terminal when a name is long or uses wide letters such as Chinese or Japanese (R5).
 
-## [Unreleased]
-
-- Tests: a file in a folder whose name starts with the working folder's name (`/work/app2` beside
+### Tests
+- A file in a folder whose name starts with the working folder's name (`/work/app2` beside
   `/work/app`) keeps its full path, in a collapsed group and in the trail file. No change to the code.
 
 ## 0.4.5 - 2026-10-30

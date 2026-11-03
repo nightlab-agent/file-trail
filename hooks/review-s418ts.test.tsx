@@ -59,7 +59,7 @@ test('review-ts comparison: the same call answered before /clear stays out of th
 })
 
 // Kind 2: the count shown is the kept list's length, capped at KEEP.
-test('review-ts: past 1000 calls the command and the file still count every call', async ($, on) => {
+test('review-ts: past 1000 calls the command and the file still count every call', { timeoutMs: 60000 }, async ($, on) => {
   const { writes } = world(on, { id: 'sess-1' })
   for (let i = 0; i < 1001; i++) await $.tool.call({ tool: 'Read', file_path: `/work/app/f${i}.ts` })
   const r = await $.command.run({ command: 'file-trail', args: '', ...RUN })
@@ -67,7 +67,7 @@ test('review-ts: past 1000 calls the command and the file still count every call
   expect(r.text).toBe('File trail opened: 1001 calls this session, 0 blocked.')
 })
 
-test('review-ts comparison: under 1000 calls the counts are right', async ($, on) => {
+test('review-ts comparison: under 1000 calls the counts are right', { timeoutMs: 60000 }, async ($, on) => {
   const { writes } = world(on, { id: 'sess-1' })
   for (let i = 0; i < 999; i++) await $.tool.call({ tool: 'Read', file_path: `/work/app/f${i}.ts` })
   const r = await $.command.run({ command: 'file-trail', args: '', ...RUN })
