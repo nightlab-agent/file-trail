@@ -2,6 +2,12 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## Unreleased
+
+### Fixed
+- A file under a Windows working folder is shown relative to it, as on macOS and Linux
+  (`hooks/review-s418ts.test.tsx`).
+
 ## [Unreleased]
 
 - Tests: a file in a folder whose name starts with the working folder's name (`/work/app2` beside
