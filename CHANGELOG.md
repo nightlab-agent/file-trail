@@ -16,7 +16,7 @@ The form is Keep a Changelog; versions follow SemVer.
   began in, however many ends come before its answer, and that folder gets its `.gitignore` first,
   also after a move into a worktree (`hooks/review-cr2.test.tsx`). It is written there too when its
   save lands while the `/clear` or resume is still ending the conversation, after the end has read
-  the list (`hooks/review-ts6.test.tsx`). One exception: once a resume has
+  the list (`hooks/review-ts6.test.tsx`, `hooks/review-ts6b.test.tsx`). One exception: once a resume has
   come back to that conversation's id and the resumed conversation has kept a call, the file is
   the resumed one's, and the late call is left out rather than put back over it with the old list
   (`hooks/resume-same-id.test.tsx`), also when the late call's write is still landing as the
