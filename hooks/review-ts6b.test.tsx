@@ -88,7 +88,7 @@ const run = async ($: Parameters<TestBody>[0], on: On, secondLandsInEndStep: boo
       $.tool.call({ tool: 'Read', file_path: `/work/app/${target}` }),
       $.tool.call({ tool: 'Read', file_path: `/work/app/${target}` }),
     ])
-    void calls.then(() => (settled = true))
+    void calls.then(() => (settled = true), () => (settled = true))
     while (!held && !settled) await sleep(1)
     if (!held) await calls
   }
