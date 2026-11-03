@@ -2,7 +2,7 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
-## Unreleased
+## [Unreleased]
 
 ### Fixed
 - A file under a Windows working folder is shown relative to it, as on macOS and Linux, whichever
@@ -19,7 +19,7 @@ The form is Keep a Changelog; versions follow SemVer.
   the resumed one's, and the late call is left out rather than put back over it with the old list
   (`hooks/resume-same-id.test.tsx`), also when the late call's write is still landing as the
   resumed call answers (`hooks/review-s425.test.tsx`, `hooks/review-s425ts.test.tsx`).
-- `/file-trail` and the file's first line count every call past 1000 since the mod was last loaded
+- `/file-trail` and the file's first line count every call past 1000 since the conversation began or the mod was last loaded
   (a change to its options reloads it); the pane and the file still keep the last 1000 (R3).
 - The status line is never cut in the middle of an emoji, a flag or a letter with its accents, and
   it fits 80 columns when a name uses wide letters (R4). The line under a collapsed group fits a
