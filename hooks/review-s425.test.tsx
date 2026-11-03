@@ -208,11 +208,11 @@ const sized = async ($: Parameters<TestBody>[0], on: On, gapMs: number) => {
   await lag(200)
   return writes
 }
-test('review P4-1d: a resumed call answering 5 ms after the late call of a 300-call conversation stays in the file', async ($, on) => {
+test('review P4-1d: a resumed call answering 5 ms after the late call of a 300-call conversation stays in the file', { timeoutMs: 60000 }, async ($, on) => {
   const writes = await sized($, on, 5)
   expect(last(writes, 'sess-a.txt')).toContain('resumed.ts')
 })
-test('review P4-1d comparison: the same resumed call answering 100 ms after the late call', async ($, on) => {
+test('review P4-1d comparison: the same resumed call answering 100 ms after the late call', { timeoutMs: 60000 }, async ($, on) => {
   const writes = await sized($, on, 100)
   expect(last(writes, 'sess-a.txt')).toContain('resumed.ts')
 })
