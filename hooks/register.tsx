@@ -197,6 +197,8 @@ const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended
       try {
         await ignore($, dir, file)
         if (!gone.resumed) await $.fs.write(trailPath(dir, gone.session), fileText(gone.all, gone.session, Math.max(gone.calls, gone.all.length)))
+      } catch {
+        // the ended file misses this write; a live call owed meanwhile is still written below
       } finally {
         file.writing = null
         done()
@@ -204,7 +206,7 @@ const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended
       if (file.owed) await writeTrail($, dir, file)
     })
     .catch(() => {
-      // the ended file misses a write; the next conversation's is untouched
+      // the owed live write failed too; the next live call writes every entry so far
     })
   return gone.saving
 }
