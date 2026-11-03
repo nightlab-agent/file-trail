@@ -14,13 +14,13 @@ The form is Keep a Changelog; versions follow SemVer.
 - A call that started before a `/clear` or a resume and answered after it no longer lands in the
   next conversation's trail, pane or file; it is written to the trail file of the conversation it
   began in, however many ends come before its answer, and that folder gets its `.gitignore` first,
-  also after a move into a worktree (`hooks/review-cr2.test.tsx`). One exception: once a resume has
+  also after a move into a worktree (`hooks/review-cr2.test.tsx`). It is written there too when its
+  save lands while the `/clear` or resume is still ending the conversation, after the end has read
+  the list (`hooks/review-ts6.test.tsx`). One exception: once a resume has
   come back to that conversation's id and the resumed conversation has kept a call, the file is
   the resumed one's, and the late call is left out rather than put back over it with the old list
   (`hooks/resume-same-id.test.tsx`), also when the late call's write is still landing as the
   resumed call answers (`hooks/review-s425.test.tsx`, `hooks/review-s425ts.test.tsx`).
-  The same holds for a call whose save lands while the `/clear` or resume is still ending the
-  conversation, after the end has read the list (`hooks/review-ts6.test.tsx`).
 - `/file-trail` and the file's first line count every call past 1000 since the conversation began or the mod was last loaded
   (a change to its options reloads it); the pane and the file still keep the last 1000 (R3).
 - The status line is never cut in the middle of an emoji, a flag or a letter with its accents, and

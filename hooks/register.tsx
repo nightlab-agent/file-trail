@@ -143,8 +143,8 @@ type TrailFile = {
 /** One trail write at a time, always from the newest entries kept: a call that finds a write in flight
  * marks the file as owed and goes on; the call doing the write then writes again, from the newest
  * entries, until nothing is owed. So a late answer from the engine can never put the file back a step,
- * no live call waits on another call's write (a late call and the end step wait for the ended file's
- * write in flight), and a failed write is made up by the next call, whose text
+ * no live call waits on another call's write (a late call and the end step wait for any write in
+ * flight, live or ended, and for the ended file's earlier saves), and a failed write is made up by the next call, whose text
  * holds every entry so far. Before the first write of a session: `<dir>/.gitignore` holding `*`, so git
  * ignores the folder in every project with no step from the user (the trail names every file the
  * session touched). */
@@ -181,7 +181,8 @@ const trailPath = (dir: string, session: string) => `${dir}/${session || 'sessio
 
 /** A conversation a /clear or a resume ended: its id, its whole list (the calls that began in it and
  * came back after the end too), its count, its writes, one after another, and whether a later
- * conversation of the same id (a resume back into it) has kept a call since. */
+ * conversation of the same id (a resume back into it) has kept a call since, and the list as the end
+ * read it, for a call saved after that read. */
 type Ended = { gen: number; session: string; all: Entry[]; calls: number; saving: Promise<void>; resumed: boolean; read: Promise<Entry[]> }
 
 /** Writes the ended conversation's file from its newest list, after any write in flight (which may be
