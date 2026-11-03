@@ -70,17 +70,25 @@ export const groupNames = (calls: ReadonlyArray<{ tool: string; input: unknown; 
     .filter(x => x.name !== '')
     .map(x => (x.isErrored ? `${x.name} !` : x.name))
 
-// East Asian wide letters and emoji take two terminal columns.
-const WIDE = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1FAFF}\u{20000}-\u{3FFFD}]/u
+// A character as the user sees it (a grapheme: a flag, an emoji with its skin tone or its joined
+// parts, a letter with its accents) takes two terminal columns when any of its code points is an East
+// Asian wide letter or an emoji drawn as one, or it holds U+FE0F (asks for the emoji form).
+const WIDE = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1FAFF}\u{20000}-\u{3FFFD}\uFE0F]|\p{Emoji_Presentation}/u
+const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+const graphemes = (s: string) => Array.from(GRAPHEMES.segment(s), x => x.segment)
+const columnsOf = (g: string) => (WIDE.test(g) ? 2 : 1)
 /** The columns a terminal gives the text. */
-export const width = (s: string) => [...s].reduce((n, ch) => n + (WIDE.test(ch) ? 2 : 1), 0)
-/** The text cut to `cols` columns, whole letters only, `…` at a cut. */
+export const width = (s: string) => graphemes(s).reduce((n, g) => n + columnsOf(g), 0)
+/** The text cut to `cols` columns, whole characters only (never half a flag or an emoji's parts),
+ * `…` at a cut. */
 export const cut = (s: string, cols: number) => {
   if (width(s) <= cols) return s
   let out = ''
-  for (const ch of s) {
-    if (width(out + ch) > cols - 1) break
-    out += ch
+  let used = 0
+  for (const g of graphemes(s)) {
+    if (used + columnsOf(g) > cols - 1) break
+    out += g
+    used += columnsOf(g)
   }
   return `${out}…`
 }
@@ -103,11 +111,8 @@ export const groupLine = (names: string[], columns: number) => {
   return line
 }
 
-/** The status text at most 80 UTF-16 units, never ending in half of a pair. */
-export const statusText = (s: string) => {
-  const t = s.slice(0, 80)
-  return /[\uD800-\uDBFF]$/.test(t) ? t.slice(0, -1) : t
-}
+/** The status text cut to 80 columns, whole characters only. */
+export const statusText = (s: string) => cut(s, 80)
 
 /** The file's whole text, oldest first, one line per entry. */
 export const fileText = (all: Entry[], session: string, calls = all.length) =>

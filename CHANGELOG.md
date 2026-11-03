@@ -16,8 +16,10 @@ The form is Keep a Changelog; versions follow SemVer.
   started in.
 - `/file-trail` and the file's first line count every call past 1000; the pane and the file still
   keep the last 1000 (R3).
-- The status line is never cut in the middle of an emoji (R4), and the line under a collapsed group
-  fits the terminal when a name is long or uses wide letters such as Chinese or Japanese (R5).
+- The status line is never cut in the middle of an emoji, a flag or a letter with its accents, and
+  it fits 80 columns when a name uses wide letters (R4). The line under a collapsed group fits the
+  terminal when a name is long or uses wide letters such as Chinese or Japanese, or emoji such as
+  ✅ (R5).
 
 ### Tests
 - A file in a folder whose name starts with the working folder's name (`/work/app2` beside

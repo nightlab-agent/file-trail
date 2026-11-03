@@ -134,7 +134,9 @@ test('review-cr K3 comparison: the same Windows path in the same case and separa
 test('review-tsr X3: an emoji of the Basic Plane (U+2705, East Asian Width W) takes two columns', () => {
   expect(width('\u2705')).toBe(2)
   const line = groupLine(['\u2705'.repeat(30)], 24)
-  expect(width(line) <= 20 && [...line].length <= 11).toBe(true)
+  // room 20: '  ⎿ ' (4) + seven checks (14) + '…' (1) = 19 columns; an eighth would need 21
+  expect(line).toBe(`  ⎿ ${'\u2705'.repeat(7)}…`)
+  expect(width(line)).toBeLessThanOrEqual(20)
 })
 test('review-tsr X3 comparison: a CJK letter takes two columns', () => {
   expect(width('\u4E2D')).toBe(2)
