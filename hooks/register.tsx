@@ -143,7 +143,8 @@ type TrailFile = {
 /** One trail write at a time, always from the newest entries kept: a call that finds a write in flight
  * marks the file as owed and goes on; the call doing the write then writes again, from the newest
  * entries, until nothing is owed. So a late answer from the engine can never put the file back a step,
- * no call waits on another call's write, and a failed write is made up by the next call, whose text
+ * no live call waits on another call's write (a late call and the end step wait for the ended file's
+ * write in flight), and a failed write is made up by the next call, whose text
  * holds every entry so far. Before the first write of a session: `<dir>/.gitignore` holding `*`, so git
  * ignores the folder in every project with no step from the user (the trail names every file the
  * session touched). */
