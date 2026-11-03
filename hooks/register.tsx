@@ -181,7 +181,7 @@ const trailPath = (dir: string, session: string) => `${dir}/${session || 'sessio
 /** A conversation a /clear or a resume ended: its id, its whole list (the calls that began in it and
  * came back after the end too), its count, its writes, one after another, and whether a later
  * conversation of the same id (a resume back into it) has kept a call since. */
-type Ended = { gen: number; session: string; all: Entry[]; calls: number; saving: Promise<void>; resumed: boolean }
+type Ended = { gen: number; session: string; all: Entry[]; calls: number; saving: Promise<void>; resumed: boolean; read: Promise<Entry[]> }
 
 /** Writes the ended conversation's file from its newest list, after any write in flight (which may be
  * of its older list), so the file never goes back a step. It holds the same one-at-a-time lock as the
@@ -302,14 +302,16 @@ export const register: Register = (on, options) => {
   on('session.end', async ($, e, next) => {
     const ends = e.reason === 'clear' || e.reason === 'resume'
     if (ends) {
-      const gone: Ended = { gen: generation, session: e.sessionId, all: [], calls, saving: Promise.resolve(), resumed: false }
+      // the list as the end read it: a call whose save lands after this read is not in it
+      const listed = read($, entries)
+      const gone: Ended = { gen: generation, session: e.sessionId, all: [], calls, saving: Promise.resolve(), resumed: false, read: listed.catch(() => []) }
       ended.set(gone.gen, gone)
       generation++
       calls = 0
       file.newest = null
       try {
         // the late calls added during the read come after the ones kept before the end
-        gone.all = [...(await read($, entries)), ...gone.all].slice(-KEEP)
+        gone.all = [...(await listed), ...gone.all].slice(-KEEP)
       } catch {
         // the ended file holds only its late calls
       }
@@ -360,6 +362,13 @@ export const register: Register = (on, options) => {
           mine = ++seq
           return [...xs, entry].slice(-KEEP)
         })
+        // saved in time for this conversation, but after the end read the list: the ended file lacks it,
+        // and the end's clear will drop it from the list, so it goes the late way
+        const goneNow = ended.get(mineGen)
+        if (mine !== 0 && goneNow !== undefined) {
+          const same = (x: Entry) => x.at === entry.at && x.tool === entry.tool && x.target === entry.target && x.agentId === entry.agentId
+          if (!(await goneNow.read).some(same)) mine = 0
+        }
         if (mine === 0) {
           // began in a conversation a /clear or a resume has ended since: its entry is that one's
           const gone = ended.get(mineGen)
