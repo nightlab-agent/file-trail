@@ -180,19 +180,28 @@ const trailPath = (dir: string, session: string) => `${dir}/${session || 'sessio
 
 /** A conversation a /clear or a resume ended: its id, its whole list (the calls that began in it and
  * came back after the end too), its count, its writes, one after another, and whether a later
- * conversation of the same id (a resume back into it) has written that file since. */
+ * conversation of the same id (a resume back into it) has kept a call since. */
 type Ended = { gen: number; session: string; all: Entry[]; calls: number; saving: Promise<void>; resumed: boolean }
 
 /** Writes the ended conversation's file from its newest list, after any write in flight (which may be
- * of its older list), so the file never goes back a step. Once a conversation resumed into the same id
- * has written the file, it is that one's, and the ended list is not written over it. */
+ * of its older list), so the file never goes back a step. It holds the same one-at-a-time lock as the
+ * live writes, so a live call that arrives meanwhile is owed and written after it. Once a conversation
+ * resumed into the same id has kept a call, the file is that one's: checked right before the write,
+ * and the ended list is not written over it. */
 const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended) => {
   gone.saving = gone.saving
     .then(async () => {
       while (file.writing) await file.writing
-      if (gone.resumed) return
-      await ignore($, dir, file)
-      await $.fs.write(trailPath(dir, gone.session), fileText(gone.all, gone.session, Math.max(gone.calls, gone.all.length)))
+      let done!: () => void
+      file.writing = new Promise<void>(r => (done = r))
+      try {
+        await ignore($, dir, file)
+        if (!gone.resumed) await $.fs.write(trailPath(dir, gone.session), fileText(gone.all, gone.session, Math.max(gone.calls, gone.all.length)))
+      } finally {
+        file.writing = null
+        done()
+      }
+      if (file.owed) await writeTrail($, dir, file)
     })
     .catch(() => {
       // the ended file misses a write; the next conversation's is untouched
