@@ -369,7 +369,10 @@ export const register: Register = (on, options) => {
         const goneNow = ended.get(mineGen)
         if (mine !== 0 && goneNow !== undefined) {
           const same = (x: Entry) => x.at === entry.at && x.tool === entry.tool && x.target === entry.target && x.agentId === entry.agentId
-          if (!(await goneNow.read).some(same)) mine = 0
+          // two calls on one file can share a millisecond: counted, so a twin the end read does not stand in
+          // for this one (at the KEEP cap a twin at the head of the read can be cut from `all`: not covered)
+          const twins = (xs: Entry[]) => xs.filter(same).length
+          if (twins(await goneNow.read) < twins(all)) mine = 0
         }
         if (mine === 0) {
           // began in a conversation a /clear or a resume has ended since: its entry is that one's
