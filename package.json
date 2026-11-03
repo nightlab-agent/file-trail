@@ -1,6 +1,6 @@
 {
   "name": "@nightlab-agent/file-trail",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Claude Code mod: which file each Read, Edit and Write touched (Glob and Grep too, where the build has them as tools), with the time and whether it was blocked, in a side pane, the status line and a local file.",
   "keywords": [
     "claude-code",
@@ -22,6 +22,7 @@
     ".claude-plugin/",
     "hooks/hooks.json",
     "hooks/register.tsx",
+    "hooks/text.tsx",
     "types/",
     "CHANGELOG.md"
   ]

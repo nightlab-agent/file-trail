@@ -38,7 +38,7 @@ const worldEnd = (on: On, session: { id: string }, swapInEnd: boolean) => {
   return { writes, release: () => release() }
 }
 
-// session.id held on its first read (as review-s418's R2 world does), or tool.call held for a 'slow' path
+// session.id held on its first read (as the resume test's world does), or tool.call held for a 'slow' path
 const world = (on: On, session: { id: string }, holdId?: Promise<void>, holdCall?: Promise<void>) => {
   const writes: Written[] = []
   const statuses: (string | undefined)[] = []

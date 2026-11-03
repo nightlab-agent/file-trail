@@ -3,7 +3,8 @@
 Read this, then `00-catalog/CATALOG.md`, then only what it
 points to.
 
-One hooks module, no dependencies: on every `tool.call` of the six built-in
+One hooks module (`hooks/register.tsx`, its text helpers in `hooks/text.tsx`), no
+dependencies: on every `tool.call` of the six built-in
 file and search tools it waits for the answer, records time, tool, target and
 outcome, draws the newest in a side pane and the status line, and rewrites one
 text file per session. Rules: never deny or rewrite a call, never read a
