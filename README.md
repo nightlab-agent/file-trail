@@ -114,7 +114,7 @@ One folder, `.file-trail` under the project the session runs in, holding:
   `.gitignore` before its first trail file.
 - one text file per session, `<session id>.txt` (`session.txt` on a host
   with no session id), rewritten whole after each recorded call, oldest
-  first, the last 1000 calls.
+  first, the last 1000 calls; its first line counts every call, past 1000 too.
 
 ```
 # file-trail 9c1d4e2a-...: 3 calls (x blocked, ! error)
