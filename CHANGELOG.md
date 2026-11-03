@@ -12,7 +12,8 @@ The form is Keep a Changelog; versions follow SemVer.
   (`hooks/review-s418.test.tsx`, R1). Its file is written from the resume on, so calls from its
   earlier run are not in it.
 - A call that started before a `/clear` or a resume and answered after it no longer lands in the
-  next conversation's trail, pane or file (R2, and `hooks/review-s418ts.test.tsx`).
+  next conversation's trail, pane or file; it is written to the trail file of the conversation it
+  started in.
 - `/file-trail` and the file's first line count every call past 1000; the pane and the file still
   keep the last 1000 (R3).
 - The status line is never cut in the middle of an emoji (R4), and the line under a collapsed group

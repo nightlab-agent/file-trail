@@ -119,7 +119,7 @@ export const fileText = (all: Entry[], session: string, calls = all.length) =>
  * the folder is the mod's own (so it gets a .gitignore), the working folder its .gitignore was last
  * written under, and the newest entries to write with the number of the call that kept them. */
 type TrailFile = {
-  writing: boolean
+  writing: Promise<void> | null
   owed: boolean
   own: boolean
   ignoredUnder: string | null
@@ -138,7 +138,8 @@ async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
     file.owed = true
     return
   }
-  file.writing = true
+  let done!: () => void
+  file.writing = new Promise<void>(r => (done = r))
   try {
     do {
       file.owed = false
@@ -150,18 +151,39 @@ async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
           file.ignoredUnder = cwd
         }
       }
-      if (file.newest) await $.fs.write(`${dir}/${file.newest.session || 'session'}.txt`, fileText(file.newest.all, file.newest.session, file.newest.calls))
+      if (file.newest) await $.fs.write(trailPath(dir, file.newest.session), fileText(file.newest.all, file.newest.session, file.newest.calls))
     } while (file.owed)
   } finally {
-    file.writing = false
+    file.writing = null
+    done()
   }
+}
+
+const trailPath = (dir: string, session: string) => `${dir}/${session || 'session'}.txt`
+
+/** A conversation a /clear or a resume ended: its id, its whole list (the calls that began in it and
+ * came back after the end too), its count, and its writes, one after another. */
+type Ended = { gen: number; session: string; all: Entry[]; calls: number; saving: Promise<void> }
+
+/** Writes the ended conversation's file from its newest list, after any write in flight (which may be
+ * of its older list), so the file never goes back a step. */
+const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended) => {
+  gone.saving = gone.saving
+    .then(async () => {
+      while (file.writing) await file.writing
+      await $.fs.write(trailPath(dir, gone.session), fileText(gone.all, gone.session, Math.max(gone.calls, gone.all.length)))
+    })
+    .catch(() => {
+      // the ended file misses a write; the next conversation's is untouched
+    })
+  return gone.saving
 }
 
 export const register: Register = (on, options) => {
   // Only a folder named .file-trail is the mod's own; any other may hold the user's files (even be the
   // project itself, `.`), so no .gitignore is written there.
   const own = String(options.dir || '.file-trail').replace(/[\\/]+$/, '').split(/[\\/]/).at(-1) === '.file-trail'
-  const file: TrailFile = { writing: false, owed: false, own, ignoredUnder: null, newest: null }
+  const file: TrailFile = { writing: null, owed: false, own, ignoredUnder: null, newest: null }
   // numbers the calls in the order their entries were saved: the attempt `update` saves read the value the
   // call before it saved, so it runs after that call's attempt, whenever either call's answer comes back
   let seq = 0
@@ -170,6 +192,10 @@ export const register: Register = (on, options) => {
   let generation = 0
   // Every call of the conversation kept in this process, the ones past KEEP too.
   let calls = 0
+  // The `dir` option; a relative folder is under the project the session runs in.
+  const dir = String(options.dir || '.file-trail')
+  // The conversation the last /clear or resume ended, for the calls that began in it.
+  let ended: Ended | null = null
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'file-trail', description: 'Show which files and searches this session touched, newest first, in a pane' })
@@ -230,12 +256,28 @@ export const register: Register = (on, options) => {
   const denied = new Set<string>()
   // A /clear or a resume ends the conversation, not the process: it goes on under another session id
   // with no session.start, so the ended conversation's calls would carry into the next one's trail and pane.
+  // The end step (next) may move the process to the next session id before it returns, so the
+  // conversation's number is raised before it, with the ending id (e.sessionId) kept beside it: a call
+  // that began in the ended conversation is never kept in the next one's list, and its entry goes to
+  // the ended conversation's own file, whenever its answer or its session id read comes back.
   on('session.end', async ($, e, next) => {
-    const r = await next(e)
-    if (e.reason === 'clear' || e.reason === 'resume') {
+    const ends = e.reason === 'clear' || e.reason === 'resume'
+    if (ends) {
+      const gone: Ended = { gen: generation, session: e.sessionId, all: [], calls, saving: Promise.resolve() }
+      ended = gone
       generation++
-      file.newest = null
       calls = 0
+      file.newest = null
+      try {
+        // the late calls added during the read come after the ones kept before the end
+        gone.all = [...(await read($, entries)), ...gone.all].slice(-KEEP)
+      } catch {
+        // the ended file holds only its late calls
+      }
+      if (gone.all.length > 0) await saveEnded($, dir, file, gone)
+    }
+    const r = await next(e)
+    if (ends) {
       try {
         await update($, entries, () => [])
         file.newest = null
@@ -274,7 +316,16 @@ export const register: Register = (on, options) => {
         mine = ++seq
         return [...xs, entry].slice(-KEEP)
       })
-      if (mine === 0) return r
+      if (mine === 0) {
+        // began in a conversation a /clear or a resume has ended since: its entry is that one's
+        const gone = ended
+        if (gone !== null && gone.gen === mineGen) {
+          gone.all = [...gone.all, entry].slice(-KEEP)
+          gone.calls++
+          await saveEnded($, dir, file, gone)
+        }
+        return r
+      }
       // counted once the entry is kept: an attempt `update` retried runs its function again
       const count = generation === mineGen ? ++calls : 0
       // a call saved after this one has shown its own entry already
@@ -285,8 +336,6 @@ export const register: Register = (on, options) => {
           // a surface with no status line
         }
       }
-      // The `dir` option; a relative folder is under the project the session runs in.
-      const dir = String(options.dir || '.file-trail')
       let session = ''
       try {
         session = await $.session.id()
@@ -294,7 +343,7 @@ export const register: Register = (on, options) => {
         // no session id on this host: one file for all
       }
       // a call saved later has kept its entries already, and they hold this one too
-      // the session id read after an end names the next conversation: this call's entries are not its
+      // the session id read after an end names the next conversation: the end wrote this call's file
       if (generation !== mineGen) return r
       if (!file.newest || mine > file.newest.n) file.newest = { n: mine, all, session, calls: Math.max(count, all.length) }
       await writeTrail($, dir, file)
