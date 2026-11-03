@@ -24,7 +24,7 @@ const ticks = async (n = 40) => {
 // parallel batch (a big file read in two offsets) answer in the same millisecond: one save lands
 // before the /clear reads the list, the other lands during the end step (its set takes 20 ms; the end
 // step 60 ms). The late one finds its twin in the read list, keeps mine > 0, and returns at
-// register.tsx:401: the ended file holds one same.ts line, not two.
+// register.tsx:401: the ended file holds one line for the target, not two.
 const run = async ($: Parameters<TestBody>[0], on: On, secondLandsInEndStep: boolean) => {
   const session = { id: 'sess-a' }
   const writes: Written[] = []
