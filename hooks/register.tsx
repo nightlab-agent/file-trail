@@ -42,9 +42,17 @@ export const targetOf = (args: Record<string, unknown>) => {
 /** A path under the working folder, shown relative to it; anything else unchanged. */
 export const shorten = (target: string, cwd: string) => {
   if (!cwd) return target
-  // A Windows working folder (backslashes, no slash) is joined to its paths with a backslash.
-  const sep = cwd.includes('\\') && !cwd.includes('/') ? '\\' : '/'
-  const base = cwd.endsWith(sep) ? cwd : `${cwd}${sep}`
+  // A Windows working folder (a drive letter, or backslashes and no slash): its paths may use either
+  // slash and any case of letter, as Windows itself allows. The rest is shown as the path wrote it.
+  if (/^[A-Za-z]:[\\/]/.test(cwd) || (cwd.includes('\\') && !cwd.includes('/'))) {
+    const key = (p: string) => p.replace(/\//g, '\\').toLowerCase()
+    const base = cwd.replace(/[\\/]+$/, '')
+    const next = target[base.length]
+    return (next === '\\' || next === '/') && key(target.slice(0, base.length)) === key(base)
+      ? target.slice(base.length + 1)
+      : target
+  }
+  const base = cwd.endsWith('/') ? cwd : `${cwd}/`
   return target.startsWith(base) ? target.slice(base.length) : target
 }
 

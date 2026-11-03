@@ -5,8 +5,8 @@ The form is Keep a Changelog; versions follow SemVer.
 ## Unreleased
 
 ### Fixed
-- A file under a Windows working folder is shown relative to it, as on macOS and Linux
-  (`hooks/review-s418ts.test.tsx`).
+- A file under a Windows working folder is shown relative to it, as on macOS and Linux, whichever
+  slash the path uses and whatever the case of its drive letter (`hooks/review-s418ts.test.tsx`).
 - A resume to another conversation in the same window now empties the list too, as a `/clear` does;
   before, the resumed conversation's trail listed the calls of the one it replaced
   (`hooks/review-s418.test.tsx`, R1). Its file is written from the resume on, so calls from its

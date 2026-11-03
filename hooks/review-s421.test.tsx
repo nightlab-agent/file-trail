@@ -127,6 +127,12 @@ test('review-cr K3: a Windows path with a lower-case drive letter under the work
 test('review-cr K3b: a Windows path written with forward slashes under the working folder is shown relative', () => {
   expect(shorten('C:/work/app/src/a.ts', 'C:\\work\\app')).toBe('src/a.ts')
 })
+test('Windows comparison: a folder whose name starts with the working folder\'s name keeps its full path', () => {
+  expect(shorten('c:\\work\\app2\\a.ts', 'C:\\work\\app')).toBe('c:\\work\\app2\\a.ts')
+})
+test('Windows comparison: a working folder at a drive\'s root shows its paths relative', () => {
+  expect(shorten('D:/src/a.ts', 'd:\\')).toBe('src/a.ts')
+})
 test('review-cr K3 comparison: the same Windows path in the same case and separator is shown relative', () => {
   expect(shorten('C:\\work\\app\\src\\a.ts', 'C:\\work\\app')).toBe('src\\a.ts')
 })
