@@ -1,7 +1,7 @@
 // Review of d546f68 (typescript lens), made to hold on every run in the a9f5548 review: the hooks
 // module stamps `new Date()` in its own realm, so a test cannot fix the clock, and two calls released
-// together land in one millisecond only some runs. The pair is tried again, under a fresh target,
-// until the second save's payload shows both entries with one stamp; only that pair is held into the
+// together land in one millisecond only on some runs. The pair is tried again, under a fresh target, up to 40
+// times, until the second save's payload shows both entries with one stamp; only that pair is held into the
 // end step.
 import { expect, test } from 'claude-code/testing'
 import type { TestBody } from 'claude-code/testing'
