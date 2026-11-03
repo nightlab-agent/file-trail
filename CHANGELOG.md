@@ -12,10 +12,10 @@ The form is Keep a Changelog; versions follow SemVer.
   (`hooks/review-s418.test.tsx`, R1). Its file is written from the resume on, so calls from its
   earlier run are not in it.
 - A call that started before a `/clear` or a resume and answered after it no longer lands in the
-  next conversation's trail, pane or file; it is written to the trail file of the conversation it
-  started in.
-- `/file-trail` and the file's first line count every call past 1000; the pane and the file still
-  keep the last 1000 (R3).
+  next conversation's trail, pane or file; it is written to the trail file of the conversation that ended last;
+  a call that spans two ends is dropped.
+- `/file-trail` and the file's first line count every call past 1000 since the mod was last loaded
+  (a change to its options reloads it); the pane and the file still keep the last 1000 (R3).
 - The status line is never cut in the middle of an emoji, a flag or a letter with its accents, and
   it fits 80 columns when a name uses wide letters (R4). The line under a collapsed group fits a
   terminal of 24 columns or more when a name is long or uses wide letters such as Chinese or Japanese, or emoji such as

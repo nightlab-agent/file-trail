@@ -79,8 +79,9 @@ export const groupNames = (calls: ReadonlyArray<{ tool: string; input: unknown; 
     .map(x => (x.isErrored ? `${x.name} !` : x.name))
 
 // A character as the user sees it (a grapheme: a flag, an emoji with its skin tone or its joined
-// parts, a letter with its accents) takes two terminal columns when any of its code points is an East
-// Asian wide letter or an emoji drawn as one, or it holds U+FE0F (asks for the emoji form).
+// parts, a letter with its accents) takes two terminal columns when any of its code points is in the
+// common wide ranges below (Chinese, Japanese, Korean, full-width forms; JavaScript has no East Asian
+// Width property) or is an emoji drawn as one, or it holds U+FE0F (asks for the emoji form).
 const WIDE = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1FAFF}\u{20000}-\u{3FFFD}\uFE0F]|\p{Emoji_Presentation}/u
 const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
 const graphemes = (s: string) => Array.from(GRAPHEMES.segment(s), x => x.segment)

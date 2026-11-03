@@ -114,7 +114,8 @@ One folder, `.file-trail` under the project the session runs in, holding:
   `.gitignore` before its first trail file.
 - one text file per session, `<session id>.txt` (`session.txt` on a host
   with no session id), rewritten whole after each recorded call, oldest
-  first, the last 1000 calls; its first line counts every call, past 1000 too.
+  first, the last 1000 calls; its first line counts every call since the mod was last loaded, past 1000
+  too.
 
 ```
 # file-trail 9c1d4e2a-...: 3 calls (x blocked, ! error)
@@ -147,7 +148,7 @@ the events Claude Code hands it. Everything stays on your machine.
 | Hook | What it does | What it changes |
 |---|---|---|
 | `session.start` | Registers the `/file-trail` command. | Nothing. |
-| `session.end` | On a `/clear` or a resume, empties the list of calls, so the next conversation's trail, pane and file start empty; the ended session's file stays as it was. Any other end: nothing. | Nothing. |
+| `session.end` | On a `/clear` or a resume, empties the list of calls, so the next conversation's trail, pane and file start empty; the ended session's file is finished, except that a call answering after the end is added to it. Any other end: nothing. | Nothing. |
 | `command.run` (`/file-trail`) | Opens the side pane. | Nothing. |
 | `ui.render` (its own pane) | Draws the newest calls from the list in memory. | Nothing. |
 | `ui.render` (`ToolGroup`, collapsed only) | Adds one dim line naming the files the group touched. | The collapsed group gains that one line. Claude Code's own line and the expanded view are left as drawn. |
@@ -182,7 +183,7 @@ session with `claude --plugin-dir .` from the clone, or set `CC_TYPES` to
 that file). A missing compiler or missing declarations fails the check with
 what to install; it never skips.
 
-That runs `claude plugin validate .`, `claude plugin test .` (16 tests
+That runs `claude plugin validate .`, `claude plugin test .` (the tests
 through the test runner Claude Code ships for plugins, with mocked tools and
 file system), a type check with `tsc --noEmit` against Claude Code's
 declarations, a checklist of rules that Anthropic's plugin directory raised on earlier
