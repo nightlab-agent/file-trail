@@ -157,20 +157,23 @@ async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
   try {
     do {
       file.owed = false
-      // a relative dir follows the session's folder (/cd, a worktree): each new folder gets its .gitignore
-      if (file.own) {
-        const cwd = await $.session.cwd().catch(() => '')
-        if (file.ignoredUnder !== cwd) {
-          await $.fs.write(`${dir}/.gitignore`, '*\n')
-          file.ignoredUnder = cwd
-        }
-      }
+      await ignore($, dir, file)
       if (file.newest) await $.fs.write(trailPath(dir, file.newest.session), fileText(file.newest.all, file.newest.session, file.newest.calls))
     } while (file.owed)
   } finally {
     file.writing = null
     done()
   }
+}
+
+/** A relative dir follows the session's folder (/cd, a worktree): before a trail file is written in a
+ * folder of the mod's own, that folder gets its .gitignore, once per working folder. */
+async function ignore($: EngineInterface, dir: string, file: TrailFile) {
+  if (!file.own) return
+  const cwd = await $.session.cwd().catch(() => '')
+  if (file.ignoredUnder === cwd) return
+  await $.fs.write(`${dir}/.gitignore`, '*\n')
+  file.ignoredUnder = cwd
 }
 
 const trailPath = (dir: string, session: string) => `${dir}/${session || 'session'}.txt`
@@ -185,6 +188,7 @@ const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended
   gone.saving = gone.saving
     .then(async () => {
       while (file.writing) await file.writing
+      await ignore($, dir, file)
       await $.fs.write(trailPath(dir, gone.session), fileText(gone.all, gone.session, Math.max(gone.calls, gone.all.length)))
     })
     .catch(() => {
@@ -208,8 +212,15 @@ export const register: Register = (on, options) => {
   let calls = 0
   // The `dir` option; a relative folder is under the project the session runs in.
   const dir = String(options.dir || '.file-trail')
-  // The conversation the last /clear or resume ended, for the calls that began in it.
-  let ended: Ended | null = null
+  // The conversations a /clear or a resume ended, by number, for the calls that began in them; one is
+  // dropped once it is ended and none of its calls is still out (so two ends before one answer lose nothing).
+  const ended = new Map<number, Ended>()
+  const out = new Map<number, number>()
+  const settle = (gen: number) => {
+    if ((out.get(gen) ?? 0) > 0) return
+    out.delete(gen)
+    if (gen !== generation) ended.delete(gen)
+  }
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'file-trail', description: 'Show which files and searches this session touched, newest first, in a pane' })
@@ -278,7 +289,7 @@ export const register: Register = (on, options) => {
     const ends = e.reason === 'clear' || e.reason === 'resume'
     if (ends) {
       const gone: Ended = { gen: generation, session: e.sessionId, all: [], calls, saving: Promise.resolve() }
-      ended = gone
+      ended.set(gone.gen, gone)
       generation++
       calls = 0
       file.newest = null
@@ -289,6 +300,7 @@ export const register: Register = (on, options) => {
         // the ended file holds only its late calls
       }
       if (gone.all.length > 0) await saveEnded($, dir, file, gone)
+      settle(gone.gen)
     }
     const r = await next(e)
     if (ends) {
@@ -310,60 +322,68 @@ export const register: Register = (on, options) => {
 
   on('tool.call', async ($, e, next) => {
     const mineGen = generation
-    const r = await next(e)
-    // a deny an outer hook overruled let the call run: only a call that came back refused is blocked
-    const blocked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id) && r.isError === true
-    if (!(TOOLS as readonly string[]).includes(e.tool)) return r
+    out.set(mineGen, (out.get(mineGen) ?? 0) + 1)
     try {
-      const cwd = await $.session.cwd().catch(() => '')
-      const entry: Entry = {
-        at: new Date().toISOString(),
-        tool: e.tool,
-        target: shorten(targetOf(e as unknown as Record<string, unknown>), cwd),
-        outcome: blocked ? 'blocked' : outcomeOf(r),
-        ...(e.agentId ? { agentId: e.agentId } : {}),
-      }
-      let mine = 0
-      const all = await update($, entries, xs => {
-        // a call that began in an ended conversation is not the next one's
-        if (generation !== mineGen) return xs
-        mine = ++seq
-        return [...xs, entry].slice(-KEEP)
-      })
-      if (mine === 0) {
-        // began in a conversation a /clear or a resume has ended since: its entry is that one's
-        const gone = ended
-        if (gone !== null && gone.gen === mineGen) {
-          gone.all = [...gone.all, entry].slice(-KEEP)
-          gone.calls++
-          await saveEnded($, dir, file, gone)
-        }
-        return r
-      }
-      // counted once the entry is kept: an attempt `update` retried runs its function again
-      const count = generation === mineGen ? ++calls : 0
-      // a call saved after this one has shown its own entry already
-      if (mine === seq) {
-        try {
-          $.ui.status(statusText(`${entry.tool} ${entry.target}${entry.outcome === 'ok' ? '' : ` (${entry.outcome})`}`))
-        } catch {
-          // a surface with no status line
-        }
-      }
-      let session = ''
+      const r = await next(e)
+      // a deny an outer hook overruled let the call run: only a call that came back refused is blocked
+      const blocked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id) && r.isError === true
+      if (!(TOOLS as readonly string[]).includes(e.tool)) return r
       try {
-        session = await $.session.id()
+        const cwd = await $.session.cwd().catch(() => '')
+        const entry: Entry = {
+          at: new Date().toISOString(),
+          tool: e.tool,
+          target: shorten(targetOf(e as unknown as Record<string, unknown>), cwd),
+          outcome: blocked ? 'blocked' : outcomeOf(r),
+          ...(e.agentId ? { agentId: e.agentId } : {}),
+        }
+        let mine = 0
+        const all = await update($, entries, xs => {
+          // a call that began in an ended conversation is not the next one's
+          // an attempt `update` runs again starts over: only the attempt that saved counts
+          mine = 0
+          if (generation !== mineGen) return xs
+          mine = ++seq
+          return [...xs, entry].slice(-KEEP)
+        })
+        if (mine === 0) {
+          // began in a conversation a /clear or a resume has ended since: its entry is that one's
+          const gone = ended.get(mineGen)
+          if (gone !== undefined) {
+            gone.all = [...gone.all, entry].slice(-KEEP)
+            gone.calls++
+            await saveEnded($, dir, file, gone)
+          }
+          return r
+        }
+        // counted once the entry is kept: an attempt `update` retried runs its function again
+        const count = generation === mineGen ? ++calls : 0
+        // a call saved after this one has shown its own entry already
+        if (mine === seq) {
+          try {
+            $.ui.status(statusText(`${entry.tool} ${entry.target}${entry.outcome === 'ok' ? '' : ` (${entry.outcome})`}`))
+          } catch {
+            // a surface with no status line
+          }
+        }
+        let session = ''
+        try {
+          session = await $.session.id()
+        } catch {
+          // no session id on this host: one file for all
+        }
+        // a call saved later has kept its entries already, and they hold this one too
+        // the session id read after an end names the next conversation: the end wrote this call's file
+        if (generation !== mineGen) return r
+        if (!file.newest || mine > file.newest.n) file.newest = { n: mine, all, session, calls: Math.max(count, all.length) }
+        await writeTrail($, dir, file)
       } catch {
-        // no session id on this host: one file for all
+        // the trail misses one write; the call's result is untouched
       }
-      // a call saved later has kept its entries already, and they hold this one too
-      // the session id read after an end names the next conversation: the end wrote this call's file
-      if (generation !== mineGen) return r
-      if (!file.newest || mine > file.newest.n) file.newest = { n: mine, all, session, calls: Math.max(count, all.length) }
-      await writeTrail($, dir, file)
-    } catch {
-      // the trail misses one write; the call's result is untouched
+      return r
+    } finally {
+      out.set(mineGen, (out.get(mineGen) ?? 1) - 1)
+      settle(mineGen)
     }
-    return r
   })
 }

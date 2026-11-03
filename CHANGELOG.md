@@ -12,8 +12,9 @@ The form is Keep a Changelog; versions follow SemVer.
   (`hooks/review-s418.test.tsx`, R1). Its file is written from the resume on, so calls from its
   earlier run are not in it.
 - A call that started before a `/clear` or a resume and answered after it no longer lands in the
-  next conversation's trail, pane or file; it is written to the trail file of the conversation that ended last;
-  a call that spans two ends is dropped.
+  next conversation's trail, pane or file; it is written to the trail file of the conversation it
+  began in, however many ends come before its answer, and that folder gets its `.gitignore` first,
+  also after a move into a worktree (`hooks/review-cr2.test.tsx`).
 - `/file-trail` and the file's first line count every call past 1000 since the mod was last loaded
   (a change to its options reloads it); the pane and the file still keep the last 1000 (R3).
 - The status line is never cut in the middle of an emoji, a flag or a letter with its accents, and
