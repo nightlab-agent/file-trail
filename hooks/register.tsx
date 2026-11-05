@@ -69,11 +69,13 @@ async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
 }
 
 /** A relative dir follows the session's folder (/cd, a worktree): before a trail file is written in a
- * folder of the mod's own, that folder gets its .gitignore, once per working folder. */
+ * folder of the mod's own, that folder gets its .gitignore, once per working folder and again whenever
+ * it is gone (deleting the folder is the README's way to forget a trail). A check that fails is taken as
+ * the file standing: it fails only on a network location, where the write would be refused as well. */
 async function ignore($: EngineInterface, dir: string, file: TrailFile) {
   if (!file.own) return
   const cwd = await $.session.cwd().catch(() => '')
-  if (file.ignoredUnder === cwd) return
+  if (file.ignoredUnder === cwd && (await $.fs.exists(`${dir}/.gitignore`).catch(() => true))) return
   await $.fs.write(`${dir}/.gitignore`, '*\n')
   file.ignoredUnder = cwd
 }

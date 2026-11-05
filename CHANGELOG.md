@@ -9,6 +9,8 @@ The form is Keep a Changelog; versions follow SemVer.
   path, a deny at the permission step for any of the six tools, and an ask nobody can answer that ends
   refused. Before, only a settings PreToolUse hook's deny was marked. The README lists what is still
   marked error (your own No at a prompt, among others).
+- Deleting `.file-trail/` during a session, the README's way to forget a trail, no longer brings the
+  folder back without its `.gitignore`, which left the paths in `git status` and open to a broad `git add`.
 
 ## 0.4.6 - 2026-11-03
 
