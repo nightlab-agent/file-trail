@@ -4,6 +4,12 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+### Fixed
+- A call a permission rule refuses is now marked blocked, not error: a deny rule on a Read, Write or Edit
+  path, a deny at the permission step for any of the six tools, and an ask nobody can answer that ends
+  refused. Before, only a settings PreToolUse hook's deny was marked. The README lists what is still
+  marked error (your own No at a prompt, among others).
+
 ## 0.4.6 - 2026-11-03
 
 ### Fixed

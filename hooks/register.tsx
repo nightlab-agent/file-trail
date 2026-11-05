@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, ToolCallResult } from 'claude-code'
 
 import type { Entry } from '../types'
 import { fileText, groupLine, groupNames, lineOf, outcomeOf, shorten, statusText, targetOf, TOOLS } from './text'
@@ -114,6 +114,20 @@ const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended
   return gone.saving
 }
 
+/** Read, Write and Edit refuse a path a deny rule names in their own input check, before PreToolUse and
+ * before tool.check (Claude Code 2.1.312), so no event names the call and it comes back as a plain error.
+ * For an error result only, the engine's own permission decision is asked; the query runs nothing. A deny
+ * rule on the path means the call cannot have run. A query that fails leaves the call an error. */
+async function ruleRefused($: EngineInterface, e: unknown, r: ToolCallResult) {
+  if (r.isError !== true) return false
+  try {
+    const { tool, tool_use_id: _id, agentId: _agent, consent: _consent, requestMeta: _meta, ...input } = e as Record<string, unknown>
+    return (await $.tool.check({ tool: tool as string, input })).decision === 'deny'
+  } catch {
+    return false
+  }
+}
+
 export const register: Register = (on, options) => {
   // Only a folder named .file-trail is the mod's own; any other may hold the user's files (even be the
   // project itself, `.`), so no .gitignore is written there.
@@ -192,9 +206,9 @@ export const register: Register = (on, options) => {
     )
   })
 
-  // A settings PreToolUse hook (the chain runs it beneath every hooks module) that denies a call
-  // comes back to tool.call as an error result; its own event shows the deny, so it is marked here.
-  // The two events carry copies of the call, alike in tool_use_id.
+  // A settings PreToolUse hook (the chain runs it beneath every hooks module) or the permission step that
+  // refuses a call comes back to tool.call as an error result; their own events show it, so it is marked
+  // there. The events carry copies of the call, alike in tool_use_id.
   const denied = new Set<string>()
   // A /clear or a resume ends the conversation, not the process: it goes on under another session id
   // with no session.start, so the ended conversation's calls would carry into the next one's trail and pane.
@@ -239,15 +253,27 @@ export const register: Register = (on, options) => {
     return r
   })
 
+  // Listens to the six tools only: a tool.check hook on a tool changes how the engine treats that tool's
+  // asks (a kept ask is not reused), so no other tool's call is touched. Passes the verdict on unchanged,
+  // the same object, so the engine reads its own decision and the model its own reason. An ask with no
+  // approver has nobody to answer it, so it ends refused unless a PermissionRequest hook or the classifier
+  // lets it run; tool.call still needs the error result to call it blocked.
+  on('tool.check', { tool: new RegExp(`^(${TOOLS.join('|')})$`) }, async ($, e, next) => {
+    const r = await next(e)
+    if (e.tool_use_id && (r.decision === 'deny' || (r.decision === 'ask' && e.approver === undefined))) denied.add(e.tool_use_id)
+    return r
+  })
+
   on('tool.call', async ($, e, next) => {
     const mineGen = generation
     out.set(mineGen, (out.get(mineGen) ?? 0) + 1)
     try {
       const r = await next(e)
       // a deny an outer hook overruled let the call run: only a call that came back refused is blocked
-      const blocked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id) && r.isError === true
+      const marked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id) && r.isError === true
       if (!(TOOLS as readonly string[]).includes(e.tool)) return r
       try {
+        const blocked = marked || (await ruleRefused($, e, r))
         const cwd = await $.session.cwd().catch(() => '')
         const entry: Entry = {
           at: new Date().toISOString(),

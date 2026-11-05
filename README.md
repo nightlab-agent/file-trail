@@ -152,12 +152,22 @@ the events Claude Code hands it. Everything stays on your machine.
 | `command.run` (`/file-trail`) | Opens the side pane. | Nothing. |
 | `ui.render` (its own pane) | Draws the newest calls from the list in memory. | Nothing. |
 | `ui.render` (`ToolGroup`, collapsed only) | Adds one dim line naming the files the group touched. | The collapsed group gains that one line. Claude Code's own line and the expanded view are left as drawn. |
-| `tool.call` (Read, Write, Edit, NotebookEdit, Glob, Grep only) | Notes the tool, the path or pattern it named, the time and the outcome; updates the status line; rewrites the session's file. | Nothing: the call runs as asked and its result passes through. |
+| `tool.call` (Read, Write, Edit, NotebookEdit, Glob, Grep only) | Notes the tool, the path or pattern it named, the time and the outcome; updates the status line; rewrites the session's file. For a call that came back as an error, asks Claude Code's permission decision whether a deny rule covers it (nothing runs), so a call a rule refused is marked blocked. | Nothing: the call runs as asked and its result passes through. |
 | `classic.PreToolUse` | Notes whether a settings PreToolUse hook (such as a security hook) denied the call, so the trail marks it blocked rather than error. | Nothing: the decision of the hooks beneath passes through unchanged. |
+| `tool.check` (the same six tools only) | Notes whether the permission step denied the call, or asked with nobody able to answer, so the trail marks it blocked rather than error if it comes back refused. | Nothing: the verdict passes through unchanged. In a host that answers permission prompts itself (the SDK), a held ask for these six tools is put to the host again rather than reused. |
 
-One limit: a hook your administrator manages (managed settings, or a mod in their tier) runs above every
-mod, so file-trail never sees its deny. A deny from its PreToolUse hook is marked `error`; a deny it makes
-before the call reaches the mods leaves no line at all.
+Blocked means a settings hook, a mod beneath this one, a permission rule or the permission step refused the
+call. Some limits:
+
+- A hook your administrator manages (managed settings, or a mod in their tier) runs above every
+  mod, so file-trail never sees its deny. A deny from its PreToolUse hook is marked `error`; a deny it makes
+  before the call reaches the mods leaves no line at all.
+- You answering No at a permission prompt, a PermissionRequest hook refusing while a person could be asked,
+  and an auto-mode classifier refusal are marked `error`: none of them is told apart from a call that failed.
+- A deny rule that only a subagent has, on a Read, Write or Edit, is marked `error`: the question goes to the
+  session's rules.
+- A call with nobody to ask that a PermissionRequest hook or the classifier let through, and that then failed,
+  is marked `blocked`.
 
 ## What it does not do
 
