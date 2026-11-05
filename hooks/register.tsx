@@ -130,12 +130,16 @@ const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended
 /** Read, Write and Edit refuse a path a deny rule names in their own input check, before PreToolUse and
  * before tool.check (Claude Code 2.1.312), so no event names the call and it comes back as a plain error.
  * For an error result only, the engine's own permission decision is asked; the query runs nothing. A deny
- * rule on the path means the call cannot have run. A query that fails leaves the call an error. */
+ * rule on the path means the call cannot have run. Write and Edit are asked about as a Read of the path
+ * too: their input check refuses a path a Read rule covers, and the query, which runs the tool's permission
+ * check and not its input check, reads their own edit rules only. A query that fails leaves the call an error. */
 async function ruleRefused($: EngineInterface, e: unknown, r: ToolCallResult) {
   if (r.isError !== true) return false
   try {
     const { tool, tool_use_id: _id, agentId: _agent, consent: _consent, requestMeta: _meta, ...input } = e as Record<string, unknown>
-    return (await $.tool.check({ tool: tool as string, input })).decision === 'deny'
+    if ((await $.tool.check({ tool: tool as string, input })).decision === 'deny') return true
+    if (tool !== 'Write' && tool !== 'Edit') return false
+    return (await $.tool.check({ tool: 'Read', input: { file_path: input.file_path } })).decision === 'deny'
   } catch {
     return false
   }

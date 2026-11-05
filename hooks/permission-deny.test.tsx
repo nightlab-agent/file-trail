@@ -31,13 +31,15 @@ const world = (on: any) => {
 }
 const trail = (ws: Written[]) => ws.filter(w => w.path.endsWith('sess-1.txt')).at(-1)!.text
 
-/** The engine's permission settings hold a deny rule for `.env`. */
-const refusedInInputCheck = (on: any, rule: RegExp = /\.env/) => {
+/** The engine's permission settings hold a deny rule for `.env`, a Read rule unless `tools` says other:
+ * the query answers for the tool it names, as checkPermissions does, so an Edit asked about a Read rule
+ * says allow, though Edit's and Write's input check refuses the path. */
+const refusedInInputCheck = (on: any, rule: RegExp = /\.env/, tools = ['Read']) => {
   const queries: unknown[] = []
-  on('tool.check', (_: unknown, e: { tool_use_id?: string; input: unknown }) => {
+  on('tool.check', (_: unknown, e: { tool: string; tool_use_id?: string; input: unknown }) => {
     if (e.tool_use_id !== undefined) return { decision: 'allow' }
     queries.push(e.input)
-    return rule.test(JSON.stringify(e.input)) ? { decision: 'deny', reason: MESSAGE, rule: 'Read(./.env)' } : { decision: 'allow' }
+    return tools.includes(e.tool) && rule.test(JSON.stringify(e.input)) ? { decision: 'deny', reason: MESSAGE, rule: 'Read(./.env)' } : { decision: 'allow' }
   })
   on('tool.call', (_: unknown, e: unknown) =>
     rule.test(JSON.stringify(e))
@@ -65,6 +67,30 @@ test('the same for a Write and an Edit', async ($, on) => {
   await $.tool.call({ tool: 'Edit', file_path: '/work/app/.env', old_string: 'a', new_string: 'b' })
   expect(trail(writes)).toContain('x Write        .env  (blocked)')
   expect(trail(writes)).toContain('x Edit         .env  (blocked)')
+})
+
+test('an Edit or a Write its own deny rule refuses is marked blocked too', async ($, on) => {
+  const { writes } = world(on)
+  refusedInInputCheck(on, /\.env/, ['Edit', 'Write'])
+  await $.tool.call({ tool: 'Edit', file_path: '/work/app/.env', old_string: 'a', new_string: 'b' })
+  await $.tool.call({ tool: 'Write', file_path: '/work/app/.env', content: 'x' })
+  expect(trail(writes)).toContain('x Edit         .env  (blocked)')
+  expect(trail(writes)).toContain('x Write        .env  (blocked)')
+})
+
+test('a failed Edit is asked about as itself, then as a Read of the path alone', async ($, on) => {
+  world(on)
+  const queries = refusedInInputCheck(on)
+  await $.tool.call({ tool: 'Edit', file_path: '/work/app/missing.ts', old_string: 'a', new_string: 'b' })
+  expect(queries).toEqual([{ file_path: '/work/app/missing.ts', old_string: 'a', new_string: 'b' }, { file_path: '/work/app/missing.ts' }])
+})
+
+test('comparison: a failed NotebookEdit under a Read rule is not asked about as a Read', async ($, on) => {
+  const { writes } = world(on)
+  const queries = refusedInInputCheck(on, /\.env/)
+  await $.tool.call({ tool: 'NotebookEdit', notebook_path: '/work/app/.env.ipynb', new_source: 'x' } as never)
+  expect(trail(writes)).toContain('! NotebookEdit .env.ipynb  (error)')
+  expect(queries.length).toBe(1)
 })
 
 test('the question put to the engine carries the call\'s arguments and none of the envelope', async ($, on) => {
