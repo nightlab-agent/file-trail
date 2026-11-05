@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { refusedVerdict } from './register'
+import { refusedVerdict, register } from './register'
 
 // How a permission deny reaches tool.call, read from Claude Code 2.1.312 (declarations and binary):
 // - Read, Write and Edit: a deny rule on the path is refused in the tool's own input check, inside core,
@@ -203,4 +203,18 @@ test('comparison: a deny is refused whoever answers asks, an allow never', () =>
   expect(refusedVerdict('deny', 'person')).toBe(true)
   expect(refusedVerdict('deny', undefined)).toBe(true)
   expect(refusedVerdict('allow', undefined)).toBe(false)
+})
+
+// A hook on a tool changes how the engine treats its asks, and nothing it does shows in the kit's result,
+// so the matcher is read where the module hands it over.
+test('tool.check listens to the six tools only', () => {
+  const seen: { tool: RegExp }[] = []
+  const on = (event: string, ...rest: unknown[]) => {
+    if (event === 'tool.check') seen.push(rest[0] as { tool: RegExp })
+  }
+  register(on as never, {} as never)
+  expect(seen.length).toBe(1)
+  const { tool } = seen[0]!
+  for (const name of ['Read', 'Write', 'Edit', 'NotebookEdit', 'Glob', 'Grep']) expect(tool.test(name)).toBe(true)
+  for (const name of ['Bash', 'ReadMore', 'mcp__files__Read', 'read', '']) expect(tool.test(name)).toBe(false)
 })
