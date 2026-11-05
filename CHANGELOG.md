@@ -4,6 +4,9 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+
+## 0.4.7 - 2026-11-04
+
 ### Fixed
 - A mod above that runs one call twice no longer mislabels it: each run reads as itself, so a refused run stays
   `blocked` and a run that failed stays `error`, whichever answer comes first. The README lists the case a mod can still hide.
