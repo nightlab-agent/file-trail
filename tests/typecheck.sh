@@ -12,7 +12,14 @@ cd "$(dirname "$0")/.."
 types="${CC_TYPES:-}"
 [ -n "$types" ] || { [ -f .claude-plugin/types/claude-code/index.d.ts ] && types=.claude-plugin/types/claude-code/index.d.ts; }
 [ -n "$types" ] || types=/nightlab/tools/cc-types/current/claude-code.d.ts
-[ -f "$types" ] || { echo "typecheck: FAIL, no engine types at $types (set CC_TYPES)"; exit 1; }
+if [ ! -f "$types" ]; then
+  if [ -n "${CC_TYPES:-}" ]; then
+    echo "typecheck: FAIL, CC_TYPES names no file: $CC_TYPES"
+  else
+    echo "typecheck: FAIL, no engine types: set CC_TYPES to Claude Code's type declarations (index.d.ts), or start one session with claude --plugin-dir . from the clone, which writes them to .claude-plugin/types/claude-code/index.d.ts"
+  fi
+  exit 1
+fi
 if [ -n "${TSC:-}" ]; then
   tsc="$(command -v "$TSC" || true)"
   [ -n "$tsc" ] && [ -x "$tsc" ] || { echo "typecheck: FAIL, TSC=$TSC is not an executable or a command on PATH"; exit 1; }
