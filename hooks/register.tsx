@@ -31,8 +31,8 @@ export const SHOW = 40
 const entries = atom({ plugin: 'file-trail', key: 'entries' } as const, [] as Entry[], { shape: 'entries-1' })
 
 /** The trail file's state in this session: whether a write is in flight, whether one is owed, whether
- * the folder is the mod's own (so it gets a .gitignore), the working folder its .gitignore was last
- * written under, and the newest entries to write with the number of the call that kept them. */
+ * the folder is the mod's own (so it gets a .gitignore), the folder its .gitignore was last written in,
+ * and the newest entries to write with the number of the call that kept them. */
 type TrailFile = {
   writing: Promise<void> | null
   owed: boolean
@@ -59,8 +59,9 @@ async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
   try {
     do {
       file.owed = false
-      await ignore($, dir, file)
-      if (file.newest) await $.fs.write(trailPath(dir, file.newest.session), fileText(file.newest.all, file.newest.session, file.newest.calls))
+      const dirNow = await folderOf($, dir)
+      await ignore($, dirNow, file)
+      if (file.newest) await $.fs.write(trailPath(dirNow, file.newest.session), fileText(file.newest.all, file.newest.session, file.newest.calls))
     } while (file.owed)
   } finally {
     file.writing = null
@@ -68,16 +69,25 @@ async function writeTrail($: EngineInterface, dir: string, file: TrailFile) {
   }
 }
 
-/** A relative dir follows the session's folder (/cd, a worktree): before a trail file is written in a
- * folder of the mod's own, that folder gets its .gitignore, once per working folder and again whenever
- * it is gone (deleting the folder is the README's way to forget a trail). A check that fails is taken as
- * the file standing: it fails only on a network location, where the write would be refused as well. */
+/** The folder the trail goes in right now: `dir` as given when absolute, else under the session's root.
+ * A relative path handed to $.fs.write would resolve under the working folder, which a shell cd moves;
+ * the root moves only with /cd or a worktree (declarations, session.root). On a host with no root, the
+ * working folder; with neither, `dir` as it stands. */
+async function folderOf($: EngineInterface, dir: string) {
+  if (/^([\\/]|[A-Za-z]:[\\/])/.test(dir)) return dir
+  const base = await $.session.root().catch(() => $.session.cwd()).catch(() => '')
+  return base ? `${base.replace(/[\\/]+$/, '')}/${dir}` : dir
+}
+
+/** Before a trail file is written in a folder of the mod's own, that folder gets its .gitignore, once per
+ * folder and again whenever it is gone (deleting the folder is the README's way to forget a trail). A
+ * check that fails is taken as the file standing: it fails only on a network location, where the write
+ * would be refused as well. */
 async function ignore($: EngineInterface, dir: string, file: TrailFile) {
   if (!file.own) return
-  const cwd = await $.session.cwd().catch(() => '')
-  if (file.ignoredUnder === cwd && (await $.fs.exists(`${dir}/.gitignore`).catch(() => true))) return
+  if (file.ignoredUnder === dir && (await $.fs.exists(`${dir}/.gitignore`).catch(() => true))) return
   await $.fs.write(`${dir}/.gitignore`, '*\n')
-  file.ignoredUnder = cwd
+  file.ignoredUnder = dir
 }
 
 const trailPath = (dir: string, session: string) => `${dir}/${session || 'session'}.txt`
@@ -100,8 +110,9 @@ const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended
       let done!: () => void
       file.writing = new Promise<void>(r => (done = r))
       try {
-        await ignore($, dir, file)
-        if (!gone.resumed) await $.fs.write(trailPath(dir, gone.session), fileText(gone.all, gone.session, Math.max(gone.calls, gone.all.length)))
+        const dirNow = await folderOf($, dir)
+        await ignore($, dirNow, file)
+        if (!gone.resumed) await $.fs.write(trailPath(dirNow, gone.session), fileText(gone.all, gone.session, Math.max(gone.calls, gone.all.length)))
       } catch {
         // the ended file misses this write; a live call owed meanwhile is still written below
       } finally {
@@ -143,7 +154,7 @@ export const register: Register = (on, options) => {
   let generation = 0
   // Every call of the conversation kept in this process, the ones past KEEP too.
   let calls = 0
-  // The `dir` option; a relative folder is under the project the session runs in.
+  // The `dir` option; a relative folder is under the project the session runs in (folderOf).
   const dir = String(options.dir || '.file-trail')
   // The conversations a /clear or a resume ended, by number, for the calls that began in them; one is
   // dropped once it is ended and none of its calls is still out (so two ends before one answer lose nothing).

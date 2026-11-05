@@ -11,6 +11,8 @@ The form is Keep a Changelog; versions follow SemVer.
   marked error (your own No at a prompt, among others).
 - Deleting `.file-trail/` during a session, the README's way to forget a trail, no longer brings the
   folder back without its `.gitignore`, which left the paths in `git status` and open to a broad `git add`.
+- A shell `cd` no longer scatters the trail: a relative `dir` is always under the project, one
+  `.file-trail` folder as the README says, not a new one in each folder the shell moved to.
 
 ## 0.4.6 - 2026-11-03
 
