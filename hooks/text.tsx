@@ -7,9 +7,16 @@ import type { Entry } from '../types'
 
 export const TOOLS = ['Read', 'Write', 'Edit', 'NotebookEdit', 'Glob', 'Grep'] as const
 
+// What may not stand in displayed text: the engine refuses a whole tree over the first control character,
+// lone surrogate, U+10EEEE or U+2800 before a mark (2.1.312), and a tab, newline, return or line separator
+// would move the text or forge a line of the trail file.
+const UNSAFE = /[\p{Cc}\p{Cs}\p{Zl}\p{Zp}\u{10EEEE}]|\u2800(?=\p{M})/gu
+/** The text with each such character written out as `\u{1b}`. Escaping twice changes nothing. */
+export const visible = (s: string) => s.replace(UNSAFE, c => `\\u{${c.codePointAt(0)!.toString(16)}}`)
+
 /** What the call named: the path for file tools, the pattern (and folder) for searches. */
 export const targetOf = (args: Record<string, unknown>) => {
-  const s = (k: string) => (typeof args[k] === 'string' ? (args[k] as string) : '')
+  const s = (k: string) => (typeof args[k] === 'string' ? visible(args[k] as string) : '')
   const path = s('file_path') || s('notebook_path')
   if (path) return path
   const pattern = s('pattern')
@@ -45,7 +52,8 @@ export const lineOf = (x: Entry) => {
   const hms = [t.getHours(), t.getMinutes(), t.getSeconds()].map(n => String(n).padStart(2, '0')).join(':')
   const tail = x.outcome === 'ok' ? '' : `  (${x.outcome})`
   const who = x.agentId ? `  [subagent ${x.agentId.slice(0, 8)}]` : ''
-  return `${hms} ${MARK[x.outcome]} ${x.tool.padEnd(12)} ${x.target}${tail}${who}`
+  // an entry stored by an earlier version holds its target as it came
+  return visible(`${hms} ${MARK[x.outcome]} ${x.tool.padEnd(12)} ${x.target}${tail}${who}`)
 }
 
 /** What each file call in a group named, in order; an errored one carries `!`. */

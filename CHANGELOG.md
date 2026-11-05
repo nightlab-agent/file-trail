@@ -13,6 +13,9 @@ The form is Keep a Changelog; versions follow SemVer.
   folder back without its `.gitignore`, which left the paths in `git status` and open to a broad `git add`.
 - A shell `cd` no longer scatters the trail: a relative `dir` is always under the project, one
   `.file-trail` folder as the README says, not a new one in each folder the shell moved to.
+- A control character in a path or pattern no longer blanks the pane for the next 39 calls, and a newline
+  or an escape sequence in one can no longer forge a line in the trail file or replay on `cat`: each is
+  written out, as `\u{1b}`, wherever a call is shown.
 
 ## 0.4.6 - 2026-11-03
 
