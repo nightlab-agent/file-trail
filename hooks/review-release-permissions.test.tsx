@@ -89,3 +89,40 @@ test('two at once: the one refused is blocked, the one that ran and failed is an
   expect(w.texts.at(-1)).toContain('x Read         .env  (blocked)')
   expect(w.texts.at(-1)).toContain('! Read         missing.ts  (error)')
 })
+
+// The query is asked outside any loop, so it answers for the main conversation's rules, not a subagent's.
+const noEvent = (on: any, w: { count: () => number }) =>
+  on('tool.call', () => {
+    w.count()
+    return { result: 'File does not exist.', isError: true as const }
+  })
+
+test('a query denied outside a subagent does not turn its failure into a block', async ($, on) => {
+  const w = world(on)
+  noEvent(on, w)
+  on('tool.check', (_: unknown, e: { agentId?: string }) => e.agentId
+    ? { decision: 'allow' }
+    : { decision: 'deny', reason: 'only the worker may read here' })
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/missing.ts', agentId: 'worker-a' } as never)
+  expect(w.ran()).toBe(1)
+  expect(w.texts.at(-1)).toContain('! Read         missing.ts  (error)')
+})
+
+test('comparison: the same failure in the main conversation, where the query speaks for it, is blocked', async ($, on) => {
+  const w = world(on)
+  noEvent(on, w)
+  on('tool.check', (_: unknown, e: { tool_use_id?: string }) => e.tool_use_id === undefined
+    ? { decision: 'deny', reason: 'a rule covers it' }
+    : { decision: 'allow' })
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/.env' })
+  expect(w.texts.at(-1)).toContain('x Read         .env  (blocked)')
+})
+
+test('comparison: a query allowed outside the subagent keeps the failure an error', async ($, on) => {
+  const w = world(on)
+  noEvent(on, w)
+  on('tool.check', () => ({ decision: 'allow' }))
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/missing.ts', agentId: 'worker-a' } as never)
+  expect(w.ran()).toBe(1)
+  expect(w.texts.at(-1)).toContain('! Read         missing.ts  (error)')
+})

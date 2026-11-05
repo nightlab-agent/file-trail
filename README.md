@@ -167,8 +167,9 @@ call. Some limits:
   before the call reaches the mods leaves no line at all.
 - You answering No at a permission prompt, a PermissionRequest hook refusing while a person could be asked,
   and an auto-mode classifier refusal are marked `error`: none of them is told apart from a call that failed.
-- A deny rule that only a subagent has, on a Read, Write or Edit, is marked `error`: the question goes to the
-  session's rules.
+- A Read, Write or Edit a deny rule refuses in a subagent is marked `error`: the question can only go to the
+  main conversation's rules, which need not be the subagent's. A subagent's Glob, Grep or NotebookEdit a rule
+  refuses is marked `blocked`, from the verdict on the call itself.
 - A call with nobody to ask that a PermissionRequest hook or the classifier let through, and that then failed,
   is marked `blocked`.
 

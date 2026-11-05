@@ -132,11 +132,13 @@ const saveEnded = ($: EngineInterface, dir: string, file: TrailFile, gone: Ended
  * For an error result only, the engine's own permission decision is asked; the query runs nothing. A deny
  * rule on the path means the call cannot have run. Write and Edit are asked about as a Read of the path
  * too: their input check refuses a path a Read rule covers, and the query, which runs the tool's permission
- * check and not its input check, reads their own edit rules only. A query that fails leaves the call an error. */
-async function ruleRefused($: EngineInterface, e: unknown, r: ToolCallResult) {
-  if (r.isError !== true) return false
+ * check and not its input check, reads their own edit rules only. A subagent's call is not asked about:
+ * the query carries no agentId (declarations, ToolCheckInput), so its answer is the main conversation's
+ * rules and proves nothing about a subagent's. Unproven, or a query that fails, leaves the call an error. */
+async function ruleRefused($: EngineInterface, e: Record<string, unknown>, r: ToolCallResult) {
+  if (r.isError !== true || e.agentId) return false
   try {
-    const { tool, tool_use_id: _id, agentId: _agent, consent: _consent, requestMeta: _meta, ...input } = e as Record<string, unknown>
+    const { tool, tool_use_id: _id, agentId: _agent, consent: _consent, requestMeta: _meta, ...input } = e
     if ((await $.tool.check({ tool: tool as string, input })).decision === 'deny') return true
     if (tool !== 'Write' && tool !== 'Edit') return false
     return (await $.tool.check({ tool: 'Read', input: { file_path: input.file_path } })).decision === 'deny'
@@ -299,7 +301,7 @@ export const register: Register = (on, options) => {
       const failed = e.tool_use_id !== undefined && ran.delete(e.tool_use_id)
       if (!(TOOLS as readonly string[]).includes(e.tool)) return r
       try {
-        const blocked = !failed && (marked || (await ruleRefused($, e, r)))
+        const blocked = !failed && (marked || (await ruleRefused($, e as unknown as Record<string, unknown>, r)))
         const cwd = await $.session.cwd().catch(() => '')
         const entry: Entry = {
           at: new Date().toISOString(),
