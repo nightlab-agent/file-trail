@@ -80,7 +80,7 @@ async function folderOf($: EngineInterface, dir: string) {
 }
 
 /** Before a trail file is written in a folder of the mod's own, that folder gets its .gitignore, once per
- * folder and again whenever it is gone (deleting the folder is the README's way to forget a trail). A
+ * folder and again whenever it is gone (the user may delete the folder while a session runs). A
  * check that fails is taken as the file gone: writing it again costs one write, and a trail file with no
  * .gitignore beside it is open to git. */
 async function ignore($: EngineInterface, dir: string, file: TrailFile) {
@@ -289,7 +289,7 @@ export const register: Register = (on, options) => {
   // asks (a kept ask is not reused), so no other tool's call is touched. Passes the verdict on unchanged,
   // the same object, so the engine reads its own decision and the model its own reason. An ask with no
   // approver has nobody to answer it, so it ends refused unless a PermissionRequest hook or the classifier
-  // lets it run; tool.call still needs the error result to call it blocked.
+  // lets it run; tool.call still needs an error result that no failed run explains to call it blocked.
   on('tool.check', { tool: new RegExp(`^(${TOOLS.join('|')})$`) }, async ($, e, next) => {
     const r = await next(e)
     if (e.tool_use_id && refusedVerdict(r.decision, e.approver)) denied.add(e.tool_use_id)

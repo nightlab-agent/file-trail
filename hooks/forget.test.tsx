@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-// The README's forget step deletes the folder. `$.fs.write` makes the folders it needs, so the next call
+// The user deletes the folder while a session runs. `$.fs.write` makes the folders it needs, so the next call
 // brings the folder back; `$.fs.exists` answers from what is on disk (index.d.ts, the `fs` noun).
 const world = (on: any) => {
   const disk = new Map<string, string>()

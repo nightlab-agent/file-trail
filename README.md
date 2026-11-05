@@ -144,8 +144,9 @@ inside a project, add it to that project's `.gitignore`.
 
 ## What each hook does
 
-The mod makes no network request and sends nothing anywhere. It only reads
-the events Claude Code hands it. Everything stays on your machine.
+The mod makes no network request and sends nothing anywhere. It reads the
+events Claude Code hands it and, for a call that came back as an error, may ask
+Claude Code's permission decision about that call. Everything stays on your machine.
 
 | Hook | What it does | What it changes |
 |---|---|---|
@@ -154,7 +155,7 @@ the events Claude Code hands it. Everything stays on your machine.
 | `command.run` (`/file-trail`) | Opens the side pane. | Nothing. |
 | `ui.render` (its own pane) | Draws the newest calls from the list in memory. | Nothing. |
 | `ui.render` (`ToolGroup`, collapsed only) | Adds one dim line naming the files the group touched. | The collapsed group gains that one line. Claude Code's own line and the expanded view are left as drawn. |
-| `tool.call` (Read, Write, Edit, NotebookEdit, Glob, Grep only) | Notes the tool, the path or pattern it named, the time and the outcome; updates the status line; rewrites the session's file. For a call that came back as an error, asks Claude Code's permission decision whether a deny rule covers it, for a Write or an Edit a Read rule on the path too (nothing runs), so a call a rule refused is marked blocked. | Nothing: the call runs as asked and its result passes through. |
+| `tool.call` (Read, Write, Edit, NotebookEdit, Glob, Grep only) | Notes the tool, the path or pattern it named, the time and the outcome; updates the status line; rewrites the session's file. For a call in the main conversation that came back as an error, asks Claude Code's permission decision whether a deny rule covers it, for a Write or an Edit a Read rule on the path too (nothing runs), so a call a rule refused is marked blocked. | Nothing: the call runs as asked and its result passes through. |
 | `classic.PreToolUse` | Notes whether a settings PreToolUse hook (such as a security hook) denied the call, so the trail marks it blocked rather than error. | Nothing: the decision of the hooks beneath passes through unchanged. |
 | `classic.PostToolUseFailure` | Notes that a tool ran and failed, so the trail marks it error even if a verdict it saw said deny (a hook above it can overrule that verdict). | Nothing: the hooks beneath run as they would. |
 | `tool.check` (the same six tools only) | Notes whether the permission step denied the call, or asked with nobody able to answer, so the trail marks it blocked rather than error if it comes back refused. | Nothing: the verdict passes through unchanged. In a host that answers permission prompts itself (the SDK), a held ask for these six tools is put to the host again rather than reused. |
@@ -165,13 +166,12 @@ call. Some limits:
 - A hook your administrator manages (managed settings, or a mod in their tier) runs above every
   mod, so file-trail never sees its deny. A deny from its PreToolUse hook is marked `error`; a deny it makes
   before the call reaches the mods leaves no line at all.
-- You answering No at a permission prompt, a PermissionRequest hook refusing while a person could be asked,
-  and an auto-mode classifier refusal are marked `error`: none of them is told apart from a call that failed.
+- You answering No at a permission prompt, and a PermissionRequest hook or an auto-mode classifier refusing
+  while a person could be asked, are marked `error`: none of them is told apart from a call that failed. With
+  nobody to ask, that hook's or classifier's refusal is marked `blocked`.
 - A Read, Write or Edit a deny rule refuses in a subagent is marked `error`: the question can only go to the
   main conversation's rules, which need not be the subagent's. A subagent's Glob, Grep or NotebookEdit a rule
   refuses is marked `blocked`, from the verdict on the call itself.
-- A call with nobody to ask that a PermissionRequest hook or the classifier let through, and that then failed,
-  is marked `blocked`.
 
 ## What it does not do
 

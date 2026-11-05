@@ -6,12 +6,11 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ### Fixed
 - A call a permission rule refuses is now marked blocked, not error: a deny rule on a Read, Write or Edit
-  path, a deny at the permission step for any of the six tools, and an ask nobody can answer that ends
-  refused. Before, only a settings PreToolUse hook's deny was marked. The README lists what is still
-  marked error (your own No at a prompt, among others).
-- Deleting `.file-trail/` during a session, the README's way to forget a trail, no longer brings the
-  folder back without its `.gitignore`, which left the paths in `git status` and open to a broad `git add`,
-  even when the check for the file fails.
+  path in the main conversation, a deny at the permission step for any of the six tools, and an ask nobody can answer that ends
+  refused. Before, only a PreToolUse hook's deny or a mod's deny was marked. The README lists what is
+  still marked error (your own No at a prompt, among others).
+- Deleting `.file-trail/` while a session runs no longer brings the folder back without its `.gitignore`,
+  which left the paths in `git status` and open to a broad `git add`, even when the check for the file fails.
 - A shell `cd` no longer scatters the trail: a relative `dir` is always under the project, one
   `.file-trail` folder as the README says, not a new one in each folder the shell moved to.
 - A control character in a path or pattern no longer blanks the pane for the next 39 calls, and a newline
