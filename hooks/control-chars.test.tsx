@@ -103,6 +103,12 @@ test('a right-to-left override cannot reverse the end of a path', () => {
   expect(targetOf({ file_path: '/w/report\u202Egnp.exe' }, '/w')).toBe('report\\u{202e}gnp.exe')
 })
 
+test('every text direction control is written out: a path can reorder what follows it with any of them', () => {
+  for (const c of ['\u202A', '\u202B', '\u202C', '\u202D', '\u202E', '\u2066', '\u2067', '\u2068', '\u2069']) {
+    expect(visible(`a${c}b`)).toBe(`a\\u{${c.codePointAt(0)!.toString(16)}}b`)
+  }
+})
+
 test('a line and a paragraph separator are written out', () => {
   expect(visible('a\u2028b\u2029c')).toBe('a\\u{2028}b\\u{2029}c')
 })
