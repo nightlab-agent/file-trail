@@ -227,6 +227,9 @@ export const register: Register = (on, options) => {
   // refuses a call comes back to tool.call as an error result; their own events show it, so it is marked
   // there. The events carry copies of the call, alike in tool_use_id.
   const denied = new Set<string>()
+  // A tool that ran and failed raises PostToolUseFailure before tool.call's answer; a refused call raises
+  // none (2.1.312). So a deny an outer hook overruled, which this module's hook cannot see, ends here.
+  const ran = new Set<string>()
   // A /clear or a resume ends the conversation, not the process: it goes on under another session id
   // with no session.start, so the ended conversation's calls would carry into the next one's trail and pane.
   // The end step (next) may move the process to the next session id before it returns, so the
@@ -270,6 +273,11 @@ export const register: Register = (on, options) => {
     return r
   })
 
+  on('classic.PostToolUseFailure', async ($, e, next) => {
+    ran.add(e.tool_use_id)
+    return next(e)
+  })
+
   // Listens to the six tools only: a tool.check hook on a tool changes how the engine treats that tool's
   // asks (a kept ask is not reused), so no other tool's call is touched. Passes the verdict on unchanged,
   // the same object, so the engine reads its own decision and the model its own reason. An ask with no
@@ -288,9 +296,10 @@ export const register: Register = (on, options) => {
       const r = await next(e)
       // a deny an outer hook overruled let the call run: only a call that came back refused is blocked
       const marked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id) && r.isError === true
+      const failed = e.tool_use_id !== undefined && ran.delete(e.tool_use_id)
       if (!(TOOLS as readonly string[]).includes(e.tool)) return r
       try {
-        const blocked = marked || (await ruleRefused($, e, r))
+        const blocked = !failed && (marked || (await ruleRefused($, e, r)))
         const cwd = await $.session.cwd().catch(() => '')
         const entry: Entry = {
           at: new Date().toISOString(),
