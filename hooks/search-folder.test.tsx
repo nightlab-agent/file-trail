@@ -55,3 +55,19 @@ test('comparison: with no working folder known, nothing changes; shorten still d
   expect(targetOf({ pattern: 'x', path: '/work/app/src' })).toBe('x in /work/app/src')
   expect(shorten('/work/app/a.ts', '/work/app')).toBe('a.ts')
 })
+
+test('a search of the working folder itself, written with a trailing slash, still names its folder', () => {
+  expect(targetOf({ pattern: 'TODO', path: '/work/app/' }, '/work/app')).toBe('TODO in /work/app/')
+  expect(targetOf({ pattern: 'TODO', path: 'C:\\app\\' }, 'C:\\app')).toBe('TODO in C:\\app\\')
+  expect(groupNames([{ tool: 'Glob', input: { pattern: '**/*.ts', path: '/work/app/' }, isErrored: false }], '/work/app')).toEqual(['**/*.ts in /work/app/'])
+})
+
+test('a path that is the working folder itself is shown as written, never as nothing', () => {
+  expect(targetOf({ file_path: '/work/app/' }, '/work/app')).toBe('/work/app/')
+  expect(targetOf({ pattern: '/work/app/' }, '/work/app')).toBe('/work/app/')
+})
+
+test('comparison: a folder under it and the folder with no slash read as before', () => {
+  expect(targetOf({ pattern: 'TODO', path: '/work/app/src/' }, '/work/app')).toBe('TODO in src/')
+  expect(targetOf({ pattern: 'TODO', path: '/work/app' }, '/work/app')).toBe('TODO in /work/app')
+})

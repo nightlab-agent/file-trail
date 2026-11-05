@@ -18,11 +18,13 @@ export const visible = (s: string) => s.replace(UNSAFE, c => `\\u{${c.codePointA
  * relative to `cwd` where it is under it, as `shorten` says, and made safe to show. */
 export const targetOf = (args: Record<string, unknown>, cwd = '') => {
   const s = (k: string) => (typeof args[k] === 'string' ? (args[k] as string) : '')
+  // the working folder itself, with a trailing slash, shortens to nothing: it is shown as written
+  const short = (p: string) => shorten(p, cwd) || p
   const path = s('file_path') || s('notebook_path')
-  if (path) return visible(shorten(path, cwd))
+  if (path) return visible(short(path))
   const pattern = s('pattern')
   const where = s('path')
-  return visible(where ? `${pattern} in ${shorten(where, cwd)}` : shorten(pattern, cwd))
+  return visible(where ? `${pattern} in ${short(where)}` : short(pattern))
 }
 
 /** A path under the working folder, shown relative to it; anything else unchanged. */
