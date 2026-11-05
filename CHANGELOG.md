@@ -5,6 +5,8 @@ The form is Keep a Changelog; versions follow SemVer.
 ## [Unreleased]
 
 ### Fixed
+- A mod above that runs one call twice no longer mislabels it: each run reads as itself, so a refused run stays
+  `blocked` and a run that failed stays `error`, whichever answer comes first. The README lists the case a mod can still hide.
 - A call a permission rule refuses is now marked blocked, not error: a deny rule on a Read, Write or Edit
   path in the main conversation, a deny at the permission step for any of the six tools, and an ask nobody can answer that ends
   refused. Before, only a PreToolUse hook's deny or a mod's deny was marked. The README lists what is

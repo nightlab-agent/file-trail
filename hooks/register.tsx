@@ -152,6 +152,16 @@ async function ruleRefused($: EngineInterface, e: Record<string, unknown>, r: To
 export const refusedVerdict = (decision: string, approver: string | undefined) =>
   decision === 'deny' || (decision === 'ask' && approver === undefined)
 
+/** One more of `id`. */
+const count = (m: Map<string, number>, id: string) => { m.set(id, (m.get(id) ?? 0) + 1) }
+/** One less of `id`; false when there was none. */
+const take = (m: Map<string, number>, id: string) => {
+  const left = m.get(id) ?? 0
+  if (left > 1) m.set(id, left - 1)
+  else m.delete(id)
+  return left > 0
+}
+
 export const register: Register = (on, options) => {
   // Only a folder named .file-trail is the mod's own; any other may hold the user's files (even be the
   // project itself, `.`), so no .gitignore is written there.
@@ -233,10 +243,12 @@ export const register: Register = (on, options) => {
   // A settings PreToolUse hook (the chain runs it beneath every hooks module) or the permission step that
   // refuses a call comes back to tool.call as an error result; their own events show it, so it is marked
   // there. The events carry copies of the call, alike in tool_use_id.
-  const denied = new Set<string>()
+  // Counted: a mod above may call next twice with one id, and each run is refused on its own.
+  const denied = new Map<string, number>()
   // A tool that ran and failed raises PostToolUseFailure before tool.call's answer; a refused call raises
   // none (2.1.312). So a deny an outer hook overruled, which this module's hook cannot see, ends here.
-  const ran = new Set<string>()
+  // Counted the same way: only a failed answer takes one, since a run that succeeded raised none.
+  const ran = new Map<string, number>()
   // A /clear or a resume ends the conversation, not the process: it goes on under another session id
   // with no session.start, so the ended conversation's calls would carry into the next one's trail and pane.
   // The end step (next) may move the process to the next session id before it returns, so the
@@ -276,12 +288,12 @@ export const register: Register = (on, options) => {
 
   on('classic.PreToolUse', async ($, e, next) => {
     const r = await next(e)
-    if (r?.deny !== undefined && e.tool_use_id) denied.add(e.tool_use_id)
+    if (r?.deny !== undefined && e.tool_use_id) count(denied, e.tool_use_id)
     return r
   })
 
   on('classic.PostToolUseFailure', async ($, e, next) => {
-    ran.add(e.tool_use_id)
+    count(ran, e.tool_use_id)
     return next(e)
   })
 
@@ -292,7 +304,7 @@ export const register: Register = (on, options) => {
   // lets it run; tool.call still needs an error result that no failed run explains to call it blocked.
   on('tool.check', { tool: new RegExp(`^(${TOOLS.join('|')})$`) }, async ($, e, next) => {
     const r = await next(e)
-    if (e.tool_use_id && refusedVerdict(r.decision, e.approver)) denied.add(e.tool_use_id)
+    if (e.tool_use_id && refusedVerdict(r.decision, e.approver)) count(denied, e.tool_use_id)
     return r
   })
 
@@ -302,8 +314,9 @@ export const register: Register = (on, options) => {
     try {
       const r = await next(e)
       // a deny an outer hook overruled let the call run: only a call that came back refused is blocked
-      const marked = e.tool_use_id !== undefined && denied.delete(e.tool_use_id) && r.isError === true
-      const failed = e.tool_use_id !== undefined && ran.delete(e.tool_use_id)
+      const id = e.tool_use_id
+      const marked = id !== undefined && take(denied, id) && r.isError === true
+      const failed = id !== undefined && r.isError === true && take(ran, id)
       if (!(TOOLS as readonly string[]).includes(e.tool)) return r
       try {
         const blocked = !failed && (marked || (await ruleRefused($, e as unknown as Record<string, unknown>, r)))

@@ -172,6 +172,8 @@ call. Some limits:
 - A Read, Write or Edit a deny rule refuses in a subagent is marked `error`: the question can only go to the
   main conversation's rules, which need not be the subagent's. A subagent's Glob, Grep or NotebookEdit a rule
   refuses is marked `blocked`, from the verdict on the call itself.
+- A managed hook or mod that lets a refused call run, then answers its failure event without passing it on, hides
+  that the call ran: a failure of that call is marked `blocked`, not `error`.
 
 ## What it does not do
 
