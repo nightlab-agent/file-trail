@@ -147,6 +147,11 @@ async function ruleRefused($: EngineInterface, e: Record<string, unknown>, r: To
   }
 }
 
+/** A verdict that ends the call refused unless something above overrules it: a deny, or an ask with no
+ * approver (the declarations' `approver`: absent where nobody can be asked). */
+export const refusedVerdict = (decision: string, approver: string | undefined) =>
+  decision === 'deny' || (decision === 'ask' && approver === undefined)
+
 export const register: Register = (on, options) => {
   // Only a folder named .file-trail is the mod's own; any other may hold the user's files (even be the
   // project itself, `.`), so no .gitignore is written there.
@@ -287,7 +292,7 @@ export const register: Register = (on, options) => {
   // lets it run; tool.call still needs the error result to call it blocked.
   on('tool.check', { tool: new RegExp(`^(${TOOLS.join('|')})$`) }, async ($, e, next) => {
     const r = await next(e)
-    if (e.tool_use_id && (r.decision === 'deny' || (r.decision === 'ask' && e.approver === undefined))) denied.add(e.tool_use_id)
+    if (e.tool_use_id && refusedVerdict(r.decision, e.approver)) denied.add(e.tool_use_id)
     return r
   })
 

@@ -1,5 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
+import { refusedVerdict } from './register'
+
 // How a permission deny reaches tool.call, read from Claude Code 2.1.312 (declarations and binary):
 // - Read, Write and Edit: a deny rule on the path is refused in the tool's own input check, inside core,
 //   before any PreToolUse hook and before tool.check. No tool.check with this call's id is raised; core
@@ -189,4 +191,16 @@ test('two calls at once, one denied: only that one is marked blocked', async ($,
   await Promise.all([$.tool.call({ tool: 'Read', file_path: '/work/app/.env' }), $.tool.call({ tool: 'Read', file_path: '/work/app/a.ts' })])
   expect(trail(writes)).toContain('x Read         .env  (blocked)')
   expect(trail(writes)).toContain('! Read         a.ts  (error)')
+})
+
+test('an ask counts as refused only with nobody to answer it, a person and a host can', () => {
+  expect(refusedVerdict('ask', undefined)).toBe(true)
+  expect(refusedVerdict('ask', 'person')).toBe(false)
+  expect(refusedVerdict('ask', 'host')).toBe(false)
+})
+
+test('comparison: a deny is refused whoever answers asks, an allow never', () => {
+  expect(refusedVerdict('deny', 'person')).toBe(true)
+  expect(refusedVerdict('deny', undefined)).toBe(true)
+  expect(refusedVerdict('allow', undefined)).toBe(false)
 })
