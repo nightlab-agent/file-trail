@@ -8,9 +8,10 @@ import type { Entry } from '../types'
 export const TOOLS = ['Read', 'Write', 'Edit', 'NotebookEdit', 'Glob', 'Grep'] as const
 
 // What may not stand in displayed text: the engine refuses a whole tree over the first control character,
-// lone surrogate, U+10EEEE or U+2800 before a mark (2.1.312), and a tab, newline, return or line separator
-// would move the text or forge a line of the trail file.
-const UNSAFE = /[\p{Cc}\p{Cs}\p{Zl}\p{Zp}\u{10EEEE}]|\u2800(?=\p{M})/gu
+// U+10EEEE or U+2800 before a mark (2.1.312) and draws a lone surrogate as U+FFFD, which hides what the path
+// holds; a tab, newline, return or line separator would move the text or forge a line of the trail file,
+// and U+202E would reverse what follows it.
+const UNSAFE = /[\p{Cc}\p{Cs}\p{Zl}\p{Zp}\u202E\u{10EEEE}]|\u2800(?=\p{M})/gu
 /** The text with each such character written out as `\u{1b}`. Escaping twice changes nothing. */
 export const visible = (s: string) => s.replace(UNSAFE, c => `\\u{${c.codePointAt(0)!.toString(16)}}`)
 

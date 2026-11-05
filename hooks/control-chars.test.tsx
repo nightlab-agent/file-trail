@@ -1,10 +1,11 @@
 import { expect, test } from 'claude-code/testing'
 
-import { fileText, groupNames, lineOf, statusText, visible } from './text'
+import { fileText, groupNames, lineOf, statusText, targetOf, visible } from './text'
 
 // What the engine refuses in a text child (2.1.312, read from the binary and the kit that shares it): the
-// control characters but tab, newline and return, U+10EEEE, lone surrogates, and U+2800 before a combining
-// mark. A refused tree draws nothing. Tab, newline and return pass the check and break a line instead.
+// control characters but tab, newline and return, U+10EEEE, and U+2800 before a combining mark. A refused
+// tree draws nothing. Tab, newline and return pass the check and break a line instead. A lone surrogate is
+// not refused: it is drawn as U+FFFD, seen in the kit.
 const PANE = {
   plugin: 'file-trail',
   component: 'Pane',
@@ -17,7 +18,6 @@ const REFUSED: [string, string][] = [
   ['delete', 'a\u007fb'],
   ['a C1 control', 'a\u0085b'],
   ['the image placeholder', 'a\u{10eeee}b'],
-  ['a lone surrogate', 'a\ud800b'],
   ['a braille blank before a mark', 'a\u2800\u0305b'],
 ]
 
@@ -89,6 +89,22 @@ test('escaping twice is escaping once', () => {
   const once = visible('a\u0007\n\ud800b')
   expect(visible(once)).toBe(once)
   expect(once).toBe('a\\u{7}\\u{a}\\u{d800}b')
+})
+
+test('a lone surrogate is written out, so the path it stands in is not shown as U+FFFD', async ($, on) => {
+  const { writes } = world(on)
+  await $.tool.call({ tool: 'Read', file_path: '/w/a\ud800b' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /Read/ }))?.text).toContain('a\\u{d800}b')
+  expect(trail(writes)).toContain('a\\u{d800}b')
+})
+
+test('a right-to-left override cannot reverse the end of a path', () => {
+  expect(targetOf({ file_path: '/w/report\u202Egnp.exe' }, '/w')).toBe('report\\u{202e}gnp.exe')
+})
+
+test('a line and a paragraph separator are written out', () => {
+  expect(visible('a\u2028b\u2029c')).toBe('a\\u{2028}b\\u{2029}c')
 })
 
 test('comparison: ordinary names are left alone, wide letters, emoji, a joined emoji, accents, Windows slashes', () => {

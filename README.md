@@ -86,7 +86,7 @@ desktop app or an editor.
 
 Under each collapsed group of tool calls, one dim line names the files and
 searches in it, in order. Paths under the working folder are shown relative
-to it. A control character in a path or pattern is written out, as `\u{1b}`,
+to it. A control character or a right-to-left override in a path or pattern is written out, as `\u{1b}`,
 in the line, the pane, the status line and the file. The line is cut to the width with a count of the rest. In the
 expanded view (ctrl+o, `--verbose`) the group is left as Claude Code draws
 it, since every call shows its path there. Groups with no file call are
