@@ -32,6 +32,7 @@ const world = (on: On, cwd: string, opts: { writeFails?: boolean; deny?: RegExp;
   const writes: Written[] = []
   const statuses: (string | undefined)[] = []
   on('session.cwd', () => ({ value: cwd }))
+  on('fs.exists', (_, e) => ({ value: writes.some(w => w.path === e.path) }))
   on('fs.write', (_, e) => {
     if (opts.writeFails) throw new Error('read-only file system')
     writes.push({ path: e.path, text: e.text })
@@ -274,6 +275,7 @@ test('three calls at once share one writer, the counts never going back; a faile
   on('ui.status', () => ({ value: undefined }))
   on('tool.call', () => ({ result: {} }))
   // every write takes a few turns of the event loop, so calls overlap it
+  on('fs.exists', (_, e) => ({ value: writes.some(w => w.path === e.path) }))
   on('fs.write', async (_, e) => {
     for (let i = 0; i < 5; i++) await Promise.resolve()
     if (fail) throw new Error('disk full')

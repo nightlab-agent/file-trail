@@ -14,6 +14,7 @@ const world = (on: any, cwdNow: () => string, rootNow: () => string) => {
   on('session.id', () => ({ value: 'sess-1' }))
   on('ui.status', () => ({ value: undefined }))
   on('tool.call', () => ({ result: {} }))
+  on('fs.exists', (_: unknown, e: { path: string }) => ({ value: writes.some(w => w.path === e.path) }))
   on('fs.write', (_: unknown, e: Written) => {
     const at = Math.max(e.path.indexOf('/.file-trail/'), e.path.indexOf('/logs/trail/'))
     const kept = at <= 0 || e.path.startsWith('/work') || e.path.startsWith('E:')

@@ -63,3 +63,26 @@ test('a /clear after the delete writes the ended file beside a .gitignore too', 
   await $.session.end({ reason: 'clear', sessionId: 'sess-1', resume: {} as never })
   expect(ignored(disk)).toEqual(['*\n'])
 })
+
+test('a check that fails, after the folder was deleted, still leaves the folder ignored', async ($, on) => {
+  const disk = new Map<string, string>()
+  let broken = false
+  on('session.cwd', () => ({ value: '/work/app' }))
+  on('session.root', () => ({ value: '/work/app' }))
+  on('session.id', () => ({ value: 'sess-1' }))
+  on('ui.status', () => ({ value: undefined }))
+  on('tool.call', () => ({ result: {} }))
+  on('fs.exists', (_: unknown, e: { path: string }) => {
+    if (broken) throw new Error('refused')
+    return { value: disk.has(e.path) }
+  })
+  on('fs.write', (_: unknown, e: { path: string; text: string }) => {
+    disk.set(e.path, e.text)
+    return { value: undefined }
+  })
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/a.ts' })
+  disk.clear()
+  broken = true
+  await $.tool.call({ tool: 'Read', file_path: '/work/app/b.ts' })
+  expect([...disk.keys()].map(p => p.split('/').at(-1)).sort()).toEqual(['.gitignore', 'sess-1.txt'])
+})

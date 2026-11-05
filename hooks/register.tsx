@@ -81,11 +81,11 @@ async function folderOf($: EngineInterface, dir: string) {
 
 /** Before a trail file is written in a folder of the mod's own, that folder gets its .gitignore, once per
  * folder and again whenever it is gone (deleting the folder is the README's way to forget a trail). A
- * check that fails is taken as the file standing: it fails only on a network location, where the write
- * would be refused as well. */
+ * check that fails is taken as the file gone: writing it again costs one write, and a trail file with no
+ * .gitignore beside it is open to git. */
 async function ignore($: EngineInterface, dir: string, file: TrailFile) {
   if (!file.own) return
-  if (file.ignoredUnder === dir && (await $.fs.exists(`${dir}/.gitignore`).catch(() => true))) return
+  if (file.ignoredUnder === dir && (await $.fs.exists(`${dir}/.gitignore`).catch(() => false))) return
   await $.fs.write(`${dir}/.gitignore`, '*\n')
   file.ignoredUnder = dir
 }
