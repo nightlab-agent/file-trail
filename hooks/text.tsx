@@ -14,14 +14,15 @@ const UNSAFE = /[\p{Cc}\p{Cs}\p{Zl}\p{Zp}\u{10EEEE}]|\u2800(?=\p{M})/gu
 /** The text with each such character written out as `\u{1b}`. Escaping twice changes nothing. */
 export const visible = (s: string) => s.replace(UNSAFE, c => `\\u{${c.codePointAt(0)!.toString(16)}}`)
 
-/** What the call named: the path for file tools, the pattern (and folder) for searches. */
-export const targetOf = (args: Record<string, unknown>) => {
-  const s = (k: string) => (typeof args[k] === 'string' ? visible(args[k] as string) : '')
+/** What the call named: the path for file tools, the pattern (and folder) for searches, each path
+ * relative to `cwd` where it is under it, as `shorten` says, and made safe to show. */
+export const targetOf = (args: Record<string, unknown>, cwd = '') => {
+  const s = (k: string) => (typeof args[k] === 'string' ? (args[k] as string) : '')
   const path = s('file_path') || s('notebook_path')
-  if (path) return path
+  if (path) return visible(shorten(path, cwd))
   const pattern = s('pattern')
   const where = s('path')
-  return where ? `${pattern} in ${where}` : pattern
+  return visible(where ? `${pattern} in ${shorten(where, cwd)}` : shorten(pattern, cwd))
 }
 
 /** A path under the working folder, shown relative to it; anything else unchanged. */
@@ -60,7 +61,7 @@ export const lineOf = (x: Entry) => {
 export const groupNames = (calls: ReadonlyArray<{ tool: string; input: unknown; isErrored: boolean }>, cwd: string) =>
   calls
     .filter(c => (TOOLS as readonly string[]).includes(c.tool) && c.input !== null && typeof c.input === 'object')
-    .map(c => ({ name: shorten(targetOf(c.input as Record<string, unknown>), cwd), isErrored: c.isErrored }))
+    .map(c => ({ name: targetOf(c.input as Record<string, unknown>, cwd), isErrored: c.isErrored }))
     .filter(x => x.name !== '')
     .map(x => (x.isErrored ? `${x.name} !` : x.name))
 

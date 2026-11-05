@@ -16,6 +16,8 @@ The form is Keep a Changelog; versions follow SemVer.
 - A control character in a path or pattern no longer blanks the pane for the next 39 calls, and a newline
   or an escape sequence in one can no longer forge a line in the trail file or replay on `cat`: each is
   written out, as `\u{1b}`, wherever a call is shown.
+- A Grep's or Glob's folder under the working folder is shown relative, as a file's path always was:
+  `TODO in src`, not `TODO in /work/app/src`.
 
 ## 0.4.6 - 2026-11-03
 

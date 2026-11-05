@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, ToolCallResult } from 'claude-code'
 
 import type { Entry } from '../types'
-import { fileText, groupLine, groupNames, lineOf, outcomeOf, shorten, statusText, targetOf, TOOLS } from './text'
+import { fileText, groupLine, groupNames, lineOf, outcomeOf, statusText, targetOf, TOOLS } from './text'
 export { cut, fileText, groupLine, groupNames, lineOf, outcomeOf, shorten, statusText, targetOf, TOOLS, width } from './text'
 
 // file-trail: which file each file tool touched, with the time and whether it
@@ -291,7 +291,7 @@ export const register: Register = (on, options) => {
         const entry: Entry = {
           at: new Date().toISOString(),
           tool: e.tool,
-          target: shorten(targetOf(e as unknown as Record<string, unknown>), cwd),
+          target: targetOf(e as unknown as Record<string, unknown>, cwd),
           outcome: blocked ? 'blocked' : outcomeOf(r),
           ...(e.agentId ? { agentId: e.agentId } : {}),
         }
