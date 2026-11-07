@@ -94,16 +94,17 @@ export const cut = (s: string, cols: number) => {
 
 /** One line under the group: the names, comma separated, cut to the width with how many are left. */
 export const groupLine = (names: string[], columns: number) => {
-  const room = Math.max(20, columns - 4)
+  const room = columns - 4
+  const fit = (s: string) => cut(s, Math.max(1, columns))
   let line = '  ⎿ '
   for (let i = 0; i < names.length; i++) {
     const sep = i === 0 ? '' : ', '
     const rest = names.length - i - 1
     const more = rest > 0 ? `, +${rest} more` : ''
     if (width(line + sep + names[i] + more) > room) {
-      if (i > 0) return `${line}, +${names.length - i} more`
+      if (i > 0) return fit(`${line}, +${names.length - i} more`)
       // a first name too long on its own is cut, so the line still fits
-      return `${line}${cut(names[i]!, room - width(line) - width(more))}${more}`
+      return fit(`${line}${cut(names[i]!, room - width(line) - width(more))}${more}`)
     }
     line += sep + names[i]
   }
