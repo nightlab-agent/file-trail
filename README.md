@@ -66,8 +66,9 @@ The same files are on npm as
 [`@nightlab-agent/file-trail`](https://www.npmjs.com/package/@nightlab-agent/file-trail),
 so a marketplace of your own can list it with
 `"source": {"source": "npm", "package": "@nightlab-agent/file-trail"}`.
-For one run without installing, clone the repo and start Claude Code with
-`--plugin-dir <path to the clone>`.
+For one run without installing, clone the repo and run
+`claude --plugin-dir <path to the clone>`, replacing the placeholder with
+the clone's path.
 
 To remove it: `/plugin uninstall file-trail`. The trail files stay until
 you delete `.file-trail/`.
@@ -134,9 +135,9 @@ commits. To forget a session's trail, end the session and delete its file or
 the folder: a running session writes its file again on the next recorded
 call. Nothing reads the files but you.
 
-The folder is the mod's one option, `dir` (set it in `/config`). A relative
-path is under the project; an absolute path keeps every project's trails in
-one place.
+The folder is the mod's one option, `dir` (set it in
+`/plugin configure file-trail`). A relative path is under the project; an
+absolute path keeps every project's trails in one place.
 The `.gitignore` is written only in a folder named `.file-trail` (the default,
 or an absolute path ending in it, with `/` or `\`). A folder of another name may hold your own
 files (it could even be `.`), so file-trail leaves git alone there: if it is
@@ -187,6 +188,9 @@ on; the pane and status line still show the trail. A failure inside the mod
 never changes a tool's result.
 
 ## Tests
+
+Run from the root of a source clone; the npm package includes neither
+`tests/` nor the hook tests.
 
 ```
 sh tests/release.sh
