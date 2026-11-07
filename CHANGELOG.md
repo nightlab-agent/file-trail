@@ -4,6 +4,9 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+
+## 0.4.8 - 2026-11-07
+
 - The line under a group now fits a terminal under 24 columns; it used to draw at least 20, and a long list's count could run past the width.
 - README: the source-only test command, the one-run command and the plugin settings as they really work from a fresh start.
 
